@@ -1,0 +1,101 @@
+"""Inspector for current KDE Plasma 6 desktop, theme, and motion environment."""
+
+from __future__ import annotations
+
+import os
+import shutil
+import subprocess
+from dataclasses import dataclass
+from pathlib import Path
+
+from krice.kwin_ctl import KWinController
+from krice.theme_ctl import ThemeController
+
+
+@dataclass
+class DesktopReport:
+    session_type: str
+    plasma_version: str
+    global_theme: str
+    color_scheme: str
+    cursor_theme: str
+    icon_theme: str
+    window_decoration: str
+    animation_factor: float
+    window_open_close_effect: str
+    blur_enabled: bool
+    morphing_popups: bool
+    wobbly_windows: bool
+    klassy_installed: bool
+    kvantum_installed: bool
+    forceblur_installed: bool
+
+
+class DesktopInspector:
+    """Diagnoses and reports KDE Plasma visual settings, themes, and installed engines."""
+
+    def __init__(self) -> None:
+        self.kwin = KWinController()
+        self.theme = ThemeController()
+
+    def inspect(self) -> DesktopReport:
+        session_type = os.environ.get("XDG_SESSION_TYPE", "unknown").upper()
+        
+        # Plasma version
+        plasmashell_bin = shutil.which("plasmashell")
+        plasma_ver = "Unknown"
+        if plasmashell_bin:
+            try:
+                out = subprocess.check_output([plasmashell_bin, "--version"], text=True, stderr=subprocess.DEVNULL)
+                plasma_ver = out.strip().replace("plasmashell ", "")
+            except Exception:
+                pass
+
+        # Theming
+        global_theme = self.theme.get_current_global_theme()
+        color_scheme = self.theme.get_current_colorscheme()
+        cursor_theme = self.theme.get_current_cursor_theme()
+        icon_theme = self.theme.get_current_icon_theme()
+        deco_lib, deco_theme = self.theme.get_window_decoration()
+        deco_str = f"{deco_lib} ({deco_theme})" if deco_theme else deco_lib
+
+        # Motion & Effects
+        animation_factor = self.kwin.get_animation_factor()
+        effects = []
+        if self.kwin.get_plugin_status("scale"):
+            effects.append("Scale")
+        if self.kwin.get_plugin_status("glide"):
+            effects.append("Glide")
+        if self.kwin.get_plugin_status("fade"):
+            effects.append("Fade")
+        if self.kwin.get_plugin_status("squash"):
+            effects.append("Squash")
+        
+        effect_str = ", ".join(effects) if effects else "Default (Fade/None)"
+
+        blur_on = self.kwin.get_plugin_status("blur")
+        morphing_on = self.kwin.get_plugin_status("morphingpopups")
+        wobbly_on = self.kwin.get_plugin_status("wobblywindows")
+
+        # Tool installation check
+        klassy_installed = shutil.which("klassy-settings") is not None or Path("/usr/lib/qt6/plugins/org.kde.kdecoration2/klassy.so").exists()
+        kvantum_installed = shutil.which("kvantummanager") is not None
+        forceblur_installed = self.kwin.get_plugin_status("kwin4_effect_forceblur") or Path("/usr/lib/qt6/plugins/kwin/effects/configs/kwin_forceblur_config.so").exists()
+
+        return DesktopReport(
+            session_type=session_type,
+            plasma_version=plasma_ver,
+            global_theme=global_theme,
+            color_scheme=color_scheme,
+            cursor_theme=cursor_theme,
+            icon_theme=icon_theme,
+            window_decoration=deco_str,
+            animation_factor=animation_factor,
+            window_open_close_effect=effect_str,
+            blur_enabled=blur_on,
+            morphing_popups=morphing_on,
+            wobbly_windows=wobbly_on,
+            klassy_installed=klassy_installed,
+            kvantum_installed=kvantum_installed,
+            forceblur_installed=forceblur_installed,
+        )
