@@ -58,16 +58,44 @@ class KWinController:
         raw = self.read_config("kwinrc", "Plugins", f"{plugin_id}Enabled", default="false")
         return raw.lower() in ("true", "1", "yes")
 
+    def load_effect(self, effect_name: str) -> bool:
+        """Dynamically loads a KWin effect into live memory via D-Bus."""
+        if self.dry_run:
+            return True
+        cmd = [self.qdbus, "org.kde.KWin", "/Effects", "org.kde.kwin.Effects.loadEffect", effect_name]
+        try:
+            res = subprocess.run(cmd, capture_output=True, text=True, check=False, timeout=3)
+            return res.returncode == 0
+        except Exception:
+            return False
+
+    def unload_effect(self, effect_name: str) -> bool:
+        """Dynamically unloads a KWin effect from live memory via D-Bus."""
+        if self.dry_run:
+            return True
+        cmd = [self.qdbus, "org.kde.KWin", "/Effects", "org.kde.kwin.Effects.unloadEffect", effect_name]
+        try:
+            res = subprocess.run(cmd, capture_output=True, text=True, check=False, timeout=3)
+            return res.returncode == 0
+        except Exception:
+            return False
+
     def set_plugin_status(self, plugin_id: str, enabled: bool) -> bool:
-        """Enables or disables a KWin effect plugin in kwinrc [Plugins]."""
-        return self.write_config("kwinrc", "Plugins", f"{plugin_id}Enabled", "true" if enabled else "false")
+        """Enables or disables a KWin effect plugin in kwinrc [Plugins] and hot-loads it in live memory."""
+        ok = self.write_config("kwinrc", "Plugins", f"{plugin_id}Enabled", "true" if enabled else "false")
+        if ok and not self.dry_run:
+            if enabled:
+                self.load_effect(plugin_id)
+            else:
+                self.unload_effect(plugin_id)
+        return ok
 
     def set_effect_param(self, effect_name: str, key: str, value: Any) -> bool:
         """Sets a parameter under [Effect-{effect_name}] in kwinrc."""
         return self.write_config("kwinrc", f"Effect-{effect_name}", key, value)
 
     def reconfigure_kwin(self) -> tuple[bool, str]:
-        """Triggers KWin live reconfiguration via D-Bus."""
+        """Triggers KWin live reconfiguration and effects reload via D-Bus."""
         if self.dry_run:
             return True, "[Dry-run] Simulated qdbus6 org.kde.KWin /KWin reconfigure"
 
@@ -79,7 +107,6 @@ class KWinController:
             return False, f"Failed to reconfigure KWin: {res.stderr.strip()}"
         except Exception as e:
             return False, f"Error calling D-Bus reconfigure: {e}"
-
     def get_kwin_effects_dir(self) -> Path:
         """Returns the local user KWin scripted effects directory."""
         data_home = os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local" / "share"))
