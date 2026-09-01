@@ -30,6 +30,7 @@ class DesktopReport:
     splash_theme: str
     animation_factor: float
     window_open_close_effect: str
+    window_minimize_effect: str
     blur_enabled: bool
     morphing_popups: bool
     wobbly_windows: bool
@@ -78,17 +79,21 @@ class DesktopInspector:
 
         # Motion & Effects
         animation_factor = self.kwin.get_animation_factor()
-        effects = []
+        open_close = []
         if self.kwin.get_plugin_status("scale"):
-            effects.append("Scale")
+            open_close.append("Scale")
         if self.kwin.get_plugin_status("glide"):
-            effects.append("Glide")
+            open_close.append("Glide")
         if self.kwin.get_plugin_status("fade"):
-            effects.append("Fade")
-        if self.kwin.get_plugin_status("squash"):
-            effects.append("Squash")
+            open_close.append("Fade")
+        open_str = ", ".join(open_close) if open_close else "Default (Fade/None)"
 
-        effect_str = ", ".join(effects) if effects else "Default (Fade/None)"
+        min_effects = []
+        if self.kwin.get_plugin_status("squash"):
+            min_effects.append("Squash")
+        if self.kwin.get_plugin_status("magiclamp"):
+            min_effects.append("Magic Lamp")
+        min_str = ", ".join(min_effects) if min_effects else "None (Instant)"
 
         blur_on = self.kwin.get_plugin_status("blur")
         morphing_on = self.kwin.get_plugin_status("morphingpopups")
@@ -120,7 +125,8 @@ class DesktopInspector:
             gtk_theme=gtk_theme,
             splash_theme=splash_theme,
             animation_factor=animation_factor,
-            window_open_close_effect=effect_str,
+            window_open_close_effect=open_str,
+            window_minimize_effect=min_str,
             blur_enabled=blur_on,
             morphing_popups=morphing_on,
             wobbly_windows=wobbly_on,

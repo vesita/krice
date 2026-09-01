@@ -69,6 +69,7 @@ def status() -> None:
     t_motion.add_row("Plasma Shell Version", report.plasma_version)
     t_motion.add_row("Animation Duration Factor", f"{report.animation_factor:.2f}x")
     t_motion.add_row("Window Open/Close Effect", report.window_open_close_effect)
+    t_motion.add_row("Window Minimize Effect", report.window_minimize_effect)
     t_motion.add_row("Background Blur", "[green]Enabled[/green]" if report.blur_enabled else "[dim]Disabled[/dim]")
     t_motion.add_row("Morphing Popups", "[green]Enabled[/green]" if report.morphing_popups else "[dim]Disabled[/dim]")
     t_motion.add_row("Wobbly Windows", "[green]Enabled[/green]" if report.wobbly_windows else "[dim]Disabled[/dim]")
@@ -867,15 +868,43 @@ def tune_motion(
     effect: str = typer.Option("scale", "--effect", "-e", help="Window open/close effect: scale, glide, fade, squash"),
     dry_run: bool = typer.Option(False, "--dry-run", "-n"),
 ) -> None:
-    """Manually fine-tune animation duration factor and active window effect."""
+    """Manually fine-tune animation duration factor and active window open/close effect."""
     kwin = KWinController(dry_run=dry_run)
     kwin.set_animation_factor(factor)
-    all_effects = ["scale", "glide", "fade", "squash"]
+    all_effects = ["scale", "glide", "fade"]
     for eff in all_effects:
         kwin.set_plugin_status(eff, eff == effect.lower())
 
     console.print(f"[bold green]✓[/bold green] Animation factor set to [yellow]{factor:.2f}x[/yellow]")
-    console.print(f"[bold green]✓[/bold green] Window effect set to [yellow]{effect}[/yellow]")
+    console.print(f"[bold green]✓[/bold green] Window open/close effect set to [yellow]{effect}[/yellow]")
+    kwin.reconfigure_kwin()
+
+
+@motion_app.command("set-minimize")
+def set_minimize_animation(
+    effect: str = typer.Argument("squash", help="Minimize effect: squash (modern collapse), magiclamp (genie wave), none"),
+    dry_run: bool = typer.Option(False, "--dry-run", "-n"),
+) -> None:
+    """Set the window minimize and restore animation effect."""
+    kwin = KWinController(dry_run=dry_run)
+    eff_lower = effect.lower()
+
+    if eff_lower == "squash":
+        kwin.set_plugin_status("squash", True)
+        kwin.set_plugin_status("magiclamp", False)
+        console.print("[bold green]✓ Window minimize/restore animation set to: Squash (fluid taskbar collapse/expand)[/bold green]")
+    elif eff_lower in ("magiclamp", "magic-lamp", "genie"):
+        kwin.set_plugin_status("squash", False)
+        kwin.set_plugin_status("magiclamp", True)
+        console.print("[bold green]✓ Window minimize/restore animation set to: Magic Lamp (curved genie wave)[/bold green]")
+    elif eff_lower in ("none", "off", "disable"):
+        kwin.set_plugin_status("squash", False)
+        kwin.set_plugin_status("magiclamp", False)
+        console.print("[bold yellow]! Window minimize/restore animation disabled (instant)[/bold yellow]")
+    else:
+        console.print(f"[bold red]Unknown minimize effect '{effect}'. Choose from: squash, magiclamp, none[/bold red]")
+        raise typer.Exit(code=1)
+
     kwin.reconfigure_kwin()
 
 
