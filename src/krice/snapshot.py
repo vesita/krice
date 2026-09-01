@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import json
 import os
 import shutil
@@ -20,14 +21,24 @@ TRACKED_TARGETS = [
     ("config", "kglobalshortcutsrc"),
     ("config", "kwinrulesrc"),
     ("config", "kcminputrc"),
+    ("config", "plasmarc"),
+    ("config", "ksplashrc"),
     ("config", "plasma-org.kde.plasma.desktop-appletsrc"),
     ("config", "plasmashellrc"),
-    # Third-party theme engine configurations
+    ("config", "kfontinst"),
+    ("config", "konsolerc"),
+    # Third-party theme engine & toolkit configurations
     ("config", "klassy"),
     ("config", "Kvantum"),
+    ("config", "gtk-3.0"),
+    ("config", "gtk-4.0"),
+    ("config", "xsettingsd"),
     # Terminal & Shell theme configurations
     ("config", "alacritty"),
     ("config", "kitty"),
+    ("config", "ghostty"),
+    ("config", "foot"),
+    ("config", "wezterm"),
     ("config", "starship.toml"),
     ("config", "fastfetch"),
     ("config", "fish/config.fish"),
@@ -38,9 +49,10 @@ TRACKED_TARGETS = [
     ("data", "aurorae/themes"),
     ("data", "kwin/scripts"),
     ("data", "color-schemes"),
+    ("data", "konsole"),
     ("data", "plasma/look-and-feel"),
     ("data", "plasma/desktoptheme"),
-    ("data", "icons"),
+    ("data", "Kvantum"),
     ("data", "fcitx5/themes"),
 ]
 
@@ -48,9 +60,9 @@ TRACKED_TARGETS = [
 class SnapshotManager:
     """Creates portable snapshots of KDE configs/themes and restores them on another machine."""
 
-    def __init__(self, dry_run: bool = False) -> None:
+    def __init__(self, dry_run: bool = False, home_dir: Path | None = None) -> None:
         self.dry_run = dry_run
-        self.home = Path.home()
+        self.home = home_dir or Path.home()
         self.config_dir = Path(os.environ.get("XDG_CONFIG_HOME", str(self.home / ".config")))
         self.data_dir = Path(os.environ.get("XDG_DATA_HOME", str(self.home / ".local" / "share")))
         self.backup_dir = self.home / ".cache" / "krice" / "backups"
@@ -67,7 +79,7 @@ class SnapshotManager:
         now = datetime.now()
         timestamp = now.strftime("%Y%m%d_%H%M%S")
         profile_name = name or f"kde_profile_{timestamp}"
-        
+
         if output_path is None:
             output_dir = Path.cwd() / "snapshots"
             output_dir.mkdir(parents=True, exist_ok=True)
@@ -96,7 +108,6 @@ class SnapshotManager:
             tarinfo = tarfile.TarInfo(name="metadata.json")
             tarinfo.size = len(meta_bytes)
             tarinfo.mtime = int(now.timestamp())
-            import io
             tar.addfile(tarinfo, io.BytesIO(meta_bytes))
 
         return output_path
