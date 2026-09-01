@@ -70,6 +70,7 @@ def status() -> None:
     t_motion.add_row("Animation Duration Factor", f"{report.animation_factor:.2f}x")
     t_motion.add_row("Window Open/Close Effect", report.window_open_close_effect)
     t_motion.add_row("Window Minimize Effect", report.window_minimize_effect)
+    t_motion.add_row("Alt+Tab Task Switcher", report.task_switcher)
     t_motion.add_row("Background Blur", "[green]Enabled[/green]" if report.blur_enabled else "[dim]Disabled[/dim]")
     t_motion.add_row("Morphing Popups", "[green]Enabled[/green]" if report.morphing_popups else "[dim]Disabled[/dim]")
     t_motion.add_row("Wobbly Windows", "[green]Enabled[/green]" if report.wobbly_windows else "[dim]Disabled[/dim]")
@@ -905,6 +906,39 @@ def set_minimize_animation(
         console.print(f"[bold red]Unknown minimize effect '{effect}'. Choose from: squash, magiclamp, none[/bold red]")
         raise typer.Exit(code=1)
 
+    kwin.reconfigure_kwin()
+
+
+@motion_app.command("set-switcher")
+def set_task_switcher_animation(
+    switcher: str = typer.Argument(
+        "thumbnail_grid",
+        help="Alt+Tab switcher animation: thumbnail_grid, coverswitch (3D cover flow), flipswitch (3D cards), compact, breeze",
+    ),
+    dry_run: bool = typer.Option(False, "--dry-run", "-n"),
+) -> None:
+    """Set the Alt+Tab window switcher animation style."""
+    kwin = KWinController(dry_run=dry_run)
+    s_lower = switcher.lower()
+
+    layout_map = {
+        "grid": "thumbnail_grid",
+        "thumbnail_grid": "thumbnail_grid",
+        "coverswitch": "coverswitch",
+        "cover": "coverswitch",
+        "flipswitch": "flipswitch",
+        "flip": "flipswitch",
+        "compact": "compact",
+        "breeze": "org.kde.breeze.desktop",
+        "default": "org.kde.breeze.desktop",
+    }
+
+    target_layout = layout_map.get(s_lower, s_lower)
+    ok = kwin.set_tabbox_layout(target_layout)
+    if ok:
+        console.print(f"[bold green]✓ Alt+Tab Task Switcher animation set to: [yellow]{target_layout}[/yellow][/bold green]")
+    else:
+        console.print(f"[bold red]Failed to set Task Switcher to '{target_layout}'[/bold red]")
     kwin.reconfigure_kwin()
 
 

@@ -31,6 +31,7 @@ class DesktopReport:
     animation_factor: float
     window_open_close_effect: str
     window_minimize_effect: str
+    task_switcher: str
     blur_enabled: bool
     morphing_popups: bool
     wobbly_windows: bool
@@ -95,6 +96,8 @@ class DesktopInspector:
             min_effects.append("Magic Lamp")
         min_str = ", ".join(min_effects) if min_effects else "None (Instant)"
 
+        task_switcher = self.kwin.get_tabbox_layout()
+
         blur_on = self.kwin.get_plugin_status("blur")
         morphing_on = self.kwin.get_plugin_status("morphingpopups")
         wobbly_on = self.kwin.get_plugin_status("wobblywindows")
@@ -127,6 +130,7 @@ class DesktopInspector:
             animation_factor=animation_factor,
             window_open_close_effect=open_str,
             window_minimize_effect=min_str,
+            task_switcher=task_switcher,
             blur_enabled=blur_on,
             morphing_popups=morphing_on,
             wobbly_windows=wobbly_on,

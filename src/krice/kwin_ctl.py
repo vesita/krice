@@ -107,6 +107,24 @@ class KWinController:
             return False, f"Failed to reconfigure KWin: {res.stderr.strip()}"
         except Exception as e:
             return False, f"Error calling D-Bus reconfigure: {e}"
+
+    def get_tabbox_layout(self) -> str:
+        """Returns current Alt+Tab task switcher layout name."""
+        return self.read_config("kwinrc", "TabBox", "LayoutName", default="org.kde.breeze.desktop")
+
+    def set_tabbox_layout(self, layout_name: str) -> bool:
+        """Sets the Alt+Tab task switcher layout and enables 3D plugins if needed."""
+        ok = self.write_config("kwinrc", "TabBox", "LayoutName", layout_name)
+        self.write_config("kwinrc", "TabBox", "ShowTabBox", "true")
+        self.write_config("kwinrc", "TabBox", "HighlightWindows", "true")
+        
+        if layout_name == "coverswitch":
+            self.set_plugin_status("coverswitch", True)
+            self.set_plugin_status("flipswitch", False)
+        elif layout_name == "flipswitch":
+            self.set_plugin_status("flipswitch", True)
+            self.set_plugin_status("coverswitch", False)
+        return ok
     def get_kwin_effects_dir(self) -> Path:
         """Returns the local user KWin scripted effects directory."""
         data_home = os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local" / "share"))

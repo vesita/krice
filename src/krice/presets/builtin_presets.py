@@ -5,73 +5,84 @@ from krice.presets.denial import DENIAL_PRESET, DENIAL_VIVID_PRESET
 
 GLIDE_PRESET = MotionPreset(
     name="glide",
-    description="Physical sheet/glide motion (smooth directional sliding with angular tilt and Squash minimize)",
-    animation_factor=0.85,
-    enabled_plugins=["glide", "squash", "morphingpopups", "blur"],
+    description="Physical sheet/glide motion (smooth directional sliding with angular tilt)",
+    animation_factor=0.60,
+    enabled_plugins=["glide", "squash", "morphingpopups", "blur", "slidingpopups", "diminactive"],
     disabled_plugins=["scale", "fade", "magiclamp"],
     plugin_configs={
         "Effect-Glide": {
-            "InAngle": -3,
-            "OutAngle": 3,
-            "InDistance": 12,
-            "OutDistance": 12,
-            "Duration": 220,
-        }
+            "InAngle": -4,
+            "OutAngle": 4,
+            "InDistance": 10,
+            "OutDistance": 10,
+            "Duration": 160,
+        },
+        "Effect-Diminactive": {
+            "DimStrength": 10,
+        },
     },
-    notes=["Window slides in like a physical sheet of paper with subtle angle tilt and Squash minimize."],
+    notes=["Window slides in like a physical sheet of paper with subtle angle and quick response."],
 )
 
 MAGIC_LAMP_PRESET = MotionPreset(
     name="magic-lamp",
-    description="Genie / Magic Lamp wave animation (curved fluid flow into taskbar icon on minimize/restore)",
-    animation_factor=0.80,
-    enabled_plugins=["scale", "magiclamp", "morphingpopups", "blur"],
+    description="Classic macOS Genie / Magic Lamp wave animation on minimize & restore",
+    animation_factor=0.65,
+    enabled_plugins=["scale", "magiclamp", "morphingpopups", "blur", "slidingpopups", "diminactive"],
     disabled_plugins=["fade", "glide", "squash"],
     plugin_configs={
         "Effect-Scale": {
-            "Duration": 240,
-            "InScale": 0.85,
-            "OutScale": 0.85,
+            "Duration": 160,
+            "InScale": 0.90,
+            "OutScale": 0.90,
         },
-        "Effect-MagicLamp": {
-            "AnimationDuration": 260,
+        "Effect-Magiclamp": {
+            "AnimationDuration": 200,
+        },
+        "Effect-Diminactive": {
+            "DimStrength": 10,
         },
     },
-    notes=["Curved genie wave motion into taskbar icon when minimizing and restoring windows."],
+    notes=["Classic genie wave curve on minimize and restore to taskbar icon."],
 )
 
 SNAPPY_PRESET = MotionPreset(
     name="snappy",
-    description="Competitive / ultra-fast responsive animations (120Hz/240Hz optimized)",
-    animation_factor=0.35,
-    enabled_plugins=["scale", "squash", "morphingpopups"],
-    disabled_plugins=["fade", "glide", "magiclamp", "wobblywindows"],
+    description="Competitive / ultra-fast responsive animations (instant feedback)",
+    animation_factor=0.30,
+    enabled_plugins=["scale", "squash", "morphingpopups", "slidingpopups"],
+    disabled_plugins=["fade", "glide", "magiclamp", "wobblywindows", "diminactive"],
     plugin_configs={
         "Effect-Scale": {
-            "Duration": 120,
+            "ScaleType": 0,
+            "Duration": 90,
             "InScale": 0.95,
+            "OutScale": 0.95,
         }
     },
-    notes=["Minimal latency with fast squash for multi-tasking on high refresh rate displays."],
+    notes=["Blazing fast 90ms scale response for instantaneous UI reactivity."],
 )
 
 SPRING_WOBBLY_PRESET = MotionPreset(
     name="spring-wobbly",
-    description="Tactile organic physics with subtle wobbly spring bounce, scale and Squash minimize",
-    animation_factor=1.00,
-    enabled_plugins=["scale", "squash", "wobblywindows", "morphingpopups", "blur"],
+    description="Tactile organic physics with subtle wobbly spring bounce and scale",
+    animation_factor=0.75,
+    enabled_plugins=["scale", "wobblywindows", "squash", "morphingpopups", "blur", "slidingpopups", "diminactive"],
     disabled_plugins=["fade", "glide", "magiclamp"],
     plugin_configs={
         "Effect-Scale": {
-            "Duration": 280,
-            "InScale": 0.75,
+            "Duration": 180,
+            "InScale": 0.85,
         },
         "Effect-Wobblywindows": {
-            "Drag": 80,
-            "Stiffness": 15,
+            "Drag": 85,
+            "Stiffness": 20,
+        },
+        "Effect-Diminactive": {
+            "DimStrength": 10,
         },
     },
-    notes=["Playful bouncing spring physics when moving, opening and minimizing windows."],
+    notes=["Playful bouncing spring physics when moving and opening windows."],
 )
 
 PRESETS: dict[str, MotionPreset] = {
