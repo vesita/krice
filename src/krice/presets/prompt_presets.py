@@ -17,13 +17,9 @@ def generate_starship_config(palette: TerminalPalette) -> str:
     accent_yellow = palette.yellow
     accent_magenta = palette.magenta
     accent_red = palette.red
-
-    return f"""# Starship 提示符 - 由 krice 自动生成，匹配调色板: {palette.display_name}
+    return f"""# Starship 提示符 - 多阶色彩层次独立自闭合胶囊群，由 krice 自动生成: {palette.display_name}
 
 format = \"\"\"
-[]({bg_pill_1})\\
-[  ](bg:{bg_pill_1} fg:{fg_pill_1})\\
-[](bg:{bg_pill_2} fg:{bg_pill_1})\\
 $directory\\
 $git_branch\\
 $git_status\\
@@ -32,7 +28,6 @@ $golang\\
 $python\\
 $nodejs\\
 $cmd_duration\\
-[ ](fg:{bg_pill_2})\\
 $character
 \"\"\"
 
@@ -40,43 +35,44 @@ command_timeout = 800
 
 [directory]
 style = "fg:{fg_pill_2} bg:{bg_pill_2} bold"
-format = "[ $path ]($style)"
+format = "[]({bg_pill_1})[  ](bg:{bg_pill_1} fg:{fg_pill_1})[](bg:{bg_pill_2} fg:{bg_pill_1})[ $path ]($style)[ ](fg:{bg_pill_2})"
 truncation_length = 3
 truncation_symbol = "…/"
 
 [git_branch]
 symbol = ""
-style = "fg:{accent_blue} bg:{bg_pill_2} bold"
-format = "[$symbol $branch ]($style)"
+style = "fg:{accent_blue} bg:{palette.selection_bg} bold"
+format = "[]({accent_blue})[ $symbol ](bg:{accent_blue} fg:{fg_pill_1})[](bg:{palette.selection_bg} fg:{accent_blue})[ $branch ]($style)"
 
 [git_status]
-style = "fg:{accent_yellow} bg:{bg_pill_2}"
-format = "[$all_status$ahead_behind ]($style)"
+style = "fg:{accent_yellow} bg:{palette.selection_bg}"
+format = "[$all_status$ahead_behind ]($style)[ ](fg:{palette.selection_bg})"
 
 [rust]
 symbol = ""
-style = "fg:{accent_red} bg:{bg_pill_2} bold"
-format = "[$symbol ($version) ]($style)"
+style = "fg:{accent_red} bg:#FFE4E6 bold"
+format = "[]({accent_red})[ $symbol ](bg:{accent_red} fg:{fg_pill_1})[](bg:#FFE4E6 fg:{accent_red})[ $version ]($style)[ ](fg:#FFE4E6)"
 
 [golang]
 symbol = ""
-style = "fg:{accent_blue} bg:{bg_pill_2} bold"
-format = "[$symbol ($version) ]($style)"
+style = "fg:#0369A1 bg:#E0F2FE bold"
+format = "[](#0369A1)[ $symbol ](bg:#0369A1 fg:{fg_pill_1})[](bg:#E0F2FE fg:#0369A1)[ $version ]($style)[ ](fg:#E0F2FE)"
 
 [python]
 symbol = ""
-style = "fg:{accent_green} bg:{bg_pill_2} bold"
-format = "[$symbol ($version) ]($style)"
+style = "fg:{accent_green} bg:#D1FAE5 bold"
+format = "[]({accent_green})[ $symbol ](bg:{accent_green} fg:{fg_pill_1})[](bg:#D1FAE5 fg:{accent_green})[ $version ]($style)[ ](fg:#D1FAE5)"
 
 [nodejs]
 symbol = ""
-style = "fg:{accent_green} bg:{bg_pill_2} bold"
-format = "[$symbol ($version) ]($style)"
+style = "fg:#3F6212 bg:#ECFCCB bold"
+format = "[](#4D7C0F)[ $symbol ](bg:#4D7C0F fg:{fg_pill_1})[](bg:#ECFCCB fg:#4D7C0F)[ $version ]($style)[ ](fg:#ECFCCB)"
 
 [cmd_duration]
 min_time = 500
-style = "fg:{palette.cyan if palette.is_dark else palette.blue} bg:{bg_pill_2}"
-format = "[⏱ $duration ]($style)"
+style = "fg:#334155 bg:#E2E8F0 bold"
+format = "[](#64748B)[ ⏱ ](bg:#64748B fg:{fg_pill_1})[](bg:#E2E8F0 fg:#64748B)[ $duration ]($style)[ ](fg:#E2E8F0)"
+
 [character]
 success_symbol = "[❯](bold {accent_blue})"
 error_symbol = "[❯](bold {accent_red})"
