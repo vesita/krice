@@ -492,11 +492,11 @@ italic_font      auto
 bold_italic_font auto
 font_size        {font_size}
 
-# Window & Padding (Default Natural Spacing)
+# Window & Frosted Glass Transparency
 window_padding_width 0
-background_opacity 0.96
-background_blur 20
-
+background_opacity 0.88
+background_blur 32
+dynamic_background_opacity yes
 # Cursor
 cursor_shape beam
 cursor_beam_thickness 1.8
