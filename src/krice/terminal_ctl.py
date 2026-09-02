@@ -181,6 +181,29 @@ class TerminalController:
             "starship": shutil.which("starship") is not None or (self.home / ".local" / "bin" / "starship").exists() or (self.config_dir / "starship.toml").exists(),
             "fastfetch": shutil.which("fastfetch") is not None or (self.config_dir / "fastfetch").exists(),
         }
+
+    def get_system_monospace_font(self) -> tuple[str, float]:
+        """Reads active KDE monospace font family and size from kdeglobals."""
+        kdeglobals = self.config_dir / "kdeglobals"
+        if kdeglobals.exists():
+            content = kdeglobals.read_text(encoding="utf-8", errors="ignore")
+            m = re.search(r"^fixed=([^,\n\r]+)", content, re.MULTILINE)
+            if m:
+                font_name = m.group(1).strip()
+                # Extract point size
+                line = content[m.start():content.find("\n", m.start())]
+                parts = line.split(",")
+                size = 11.5
+                if len(parts) >= 2:
+                    try:
+                        s = float(parts[1].strip())
+                        if 8.0 <= s <= 24.0:
+                            size = s
+                    except ValueError:
+                        pass
+                if font_name:
+                    return font_name, size
+        return "CodeNewRoman WenKai Mono", 11.5
     # --- Terminal Applications Application Logic ---
 
     # 1. Konsole (KDE Native)
@@ -458,15 +481,16 @@ inactive_border_color {palette.selection_bg}
                 if "include current-theme.conf" not in main_txt:
                     main_config.write_text(main_txt + "\ninclude current-theme.conf\n", encoding="utf-8")
             else:
-                default_kitty_conf = """# Kitty Terminal Configuration - Managed by krice
+                font_family, font_size = self.get_system_monospace_font()
+                default_kitty_conf = f"""# Kitty Terminal Configuration - Managed by krice
 include current-theme.conf
 
-# Typography
-font_family      MesloLGS Nerd Font
+# Typography (Follow System Monospace Font dynamically via Fontconfig)
+font_family      monospace
 bold_font        auto
 italic_font      auto
 bold_italic_font auto
-font_size        11.5
+font_size        {font_size}
 
 # Window & Padding
 window_padding_width 14 16
@@ -486,7 +510,7 @@ tab_powerline_style slanted
 tab_bar_min_tabs 1
 tab_bar_margin_width 4.0
 tab_bar_margin_height 4.0 0.0
-tab_title_template " 󰓩 {index}: {title} "
+tab_title_template " 󰓩 {{index}}: {{title}} "
 active_tab_font_style bold-italic
 inactive_tab_font_style normal
 
@@ -502,7 +526,6 @@ map ctrl+shift+4 goto_tab 4
 map ctrl+shift+5 goto_tab 5
 """
                 main_config.write_text(default_kitty_conf, encoding="utf-8")
-
             # Signal Kitty if running
             try:
                 subprocess.run(["pkill", "-USR1", "kitty"], check=False, capture_output=True)
