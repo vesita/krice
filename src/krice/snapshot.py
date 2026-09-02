@@ -39,6 +39,7 @@ TRACKED_TARGETS = [
     ("config", "ghostty"),
     ("config", "foot"),
     ("config", "wezterm"),
+    ("config", "zellij"),
     ("config", "starship.toml"),
     ("config", "fastfetch"),
     ("config", "fish/config.fish"),
