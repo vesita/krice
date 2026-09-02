@@ -485,8 +485,8 @@ inactive_border_color {palette.selection_bg}
                 default_kitty_conf = f"""# Kitty Terminal Configuration - Managed by krice
 include current-theme.conf
 
-# Typography (Follow System Monospace Font dynamically via Fontconfig)
-font_family      monospace
+# Typography
+font_family      MesloLGS Nerd Font
 bold_font        auto
 italic_font      auto
 bold_italic_font auto
