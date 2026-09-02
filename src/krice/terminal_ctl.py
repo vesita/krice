@@ -649,6 +649,7 @@ return config
 """
         try:
             theme_file.write_text(theme_kdl, encoding="utf-8")
+            # Ensure modern sleek UI parameters in config.kdl
             config_file = zellij_dir / "config.kdl"
             if config_file.exists():
                 c_txt = config_file.read_text(encoding="utf-8")
@@ -656,11 +657,42 @@ return config
                     c_txt = re.sub(r'theme\s+["\'].*?["\']', f'theme "krice-{palette.name}"', c_txt)
                 else:
                     c_txt = f'theme "krice-{palette.name}"\n' + c_txt
+                if "pane_frames " in c_txt:
+                    c_txt = re.sub(r'pane_frames\s+\w+', 'pane_frames false', c_txt)
+                else:
+                    c_txt = 'pane_frames false\n' + c_txt
+                if "default_layout " in c_txt:
+                    c_txt = re.sub(r'default_layout\s+["\'].*?["\']', 'default_layout "compact"', c_txt)
+                else:
+                    c_txt = 'default_layout "compact"\n' + c_txt
+                if "simplified_ui " in c_txt:
+                    c_txt = re.sub(r'simplified_ui\s+\w+', 'simplified_ui true', c_txt)
+                else:
+                    c_txt = 'simplified_ui true\n' + c_txt
                 config_file.write_text(c_txt, encoding="utf-8")
             else:
-                config_file.write_text(f'theme "krice-{palette.name}"\n', encoding="utf-8")
+                config_file.write_text(f"""theme "krice-{palette.name}"
+default_layout "compact"
+pane_frames false
+simplified_ui true
+mouse_mode true
+copy_on_select true
+""", encoding="utf-8")
 
-            return True, f"Zellij color theme set to 'krice-{palette.name}'."
+            # Also create layouts/compact.kdl if desired
+            layouts_dir = zellij_dir / "layouts"
+            layouts_dir.mkdir(parents=True, exist_ok=True)
+            layout_file = layouts_dir / "compact.kdl"
+            if not layout_file.exists():
+                layout_file.write_text("""layout {
+    pane size=1 borderless=true {
+        plugin location="zellij:compact-bar"
+    }
+    pane borderless=true
+}
+""", encoding="utf-8")
+
+            return True, f"Zellij color theme set to 'krice-{palette.name}' (Sleek Compact UI enabled)."
         except Exception as e:
             return False, f"Failed to update Zellij theme: {e}"
 

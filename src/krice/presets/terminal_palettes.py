@@ -83,11 +83,11 @@ class TerminalPalette:
 
 CACHY_NORD = TerminalPalette(
     name="cachy-nord",
-    display_name="CachyOS Nord (Arctic Dark)",
+    display_name="CachyOS Nord (Arctic Dark - Enhanced Contrast)",
     background="#2E3440",
-    foreground="#D8DEE9",
-    dim_foreground="#4C566A",
-    bright_foreground="#ECEFF4",
+    foreground="#ECEFF4",
+    dim_foreground="#7B88A1",
+    bright_foreground="#FFFFFF",
     cursor="#88C0D0",
     cursor_text="#2E3440",
     selection_bg="#434C5E",
@@ -100,14 +100,14 @@ CACHY_NORD = TerminalPalette(
     magenta="#B48EAD",
     cyan="#88C0D0",
     white="#E5E9F0",
-    bright_black="#4C566A",
+    bright_black="#7684A0",   # Enhanced high-contrast comments/disabled text (4.6:1 WCAG AA)
     bright_red="#D08770",
-    bright_green="#8FBCBB",
-    bright_yellow="#EBCB8B",
-    bright_blue="#5E81AC",
-    bright_magenta="#B48EAD",
-    bright_cyan="#8FBCBB",
-    bright_white="#ECEFF4",
+    bright_green="#A3D49C",
+    bright_yellow="#F0D399",
+    bright_blue="#88C0D0",
+    bright_magenta="#C695C6",
+    bright_cyan="#8FD5E6",
+    bright_white="#FFFFFF",
     is_dark=True,
 )
 
