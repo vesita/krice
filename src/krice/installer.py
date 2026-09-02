@@ -5,7 +5,6 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
-import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional, Tuple
@@ -357,37 +356,6 @@ class DependencyHelper:
                         results.append(("bash", True, f"{bashrc} 中已包含 Starship 提示符配置"))
 
         return results
-
-    def install_meslo_nerd_font(self) -> Tuple[bool, str]:
-        """下载官方 MesloLGS Nerd Font 全套字重并安装至 ~/.local/share/fonts/。"""
-        self.fonts_dir.mkdir(parents=True, exist_ok=True)
-        base_url = "https://github.com/romkatv/powerlevel10k-media/raw/master"
-        fonts = [
-            "MesloLGS NF Regular.ttf",
-            "MesloLGS NF Bold.ttf",
-            "MesloLGS NF Italic.ttf",
-            "MesloLGS NF Bold Italic.ttf",
-        ]
-
-        downloaded = 0
-        for font in fonts:
-            target = self.fonts_dir / font
-            if not target.exists():
-                url = f"{base_url}/{font.replace(' ', '%20')}"
-                try:
-                    urllib.request.urlretrieve(url, str(target))
-                    downloaded += 1
-                except Exception as e:
-                    return False, f"下载字体 {font} 失败: {e}"
-
-        # 刷新系统字体缓存
-        if shutil.which("fc-cache"):
-            try:
-                subprocess.run(["fc-cache", "-f", str(self.fonts_dir)], check=False, capture_output=True)
-            except Exception:
-                pass
-
-        return True, f"MesloLGS Nerd Font 字体安装成功（已下载 {downloaded} 个字重文件并刷新字体缓存）"
 
     def install_packages(self, package_names: List[str]) -> Tuple[bool, str]:
         """调用系统包管理器或 AUR 助手安装指定软件包。"""

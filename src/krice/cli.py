@@ -979,12 +979,11 @@ def doctor() -> None:
 @app.command("install")
 @app.command("setup")
 def install_dependencies(
-    all_deps: bool = typer.Option(True, "--all", "-a", help="安装所有核心终端、MesloLGS 字体与 Shell 挂钩"),
-    fonts_only: bool = typer.Option(False, "--fonts", help="仅下载官方 MesloLGS Nerd Font 全套字重并安装至 ~/.local/share/fonts/"),
+    all_deps: bool = typer.Option(True, "--all", "-a", help="通过系统包管理器安装核心终端依赖并配置 Shell 挂钩"),
     hooks_only: bool = typer.Option(False, "--hooks", help="仅在 fish、zsh 和 bash 配置文件中注入 Starship 提示符挂钩"),
-    terminal_only: bool = typer.Option(False, "--terminal", help="仅安装 Kitty、Starship 与 Fastfetch"),
+    terminal_only: bool = typer.Option(False, "--terminal", help="仅安装 Kitty、Starship 与 Fastfetch 软件包"),
 ) -> None:
-    """内嵌智能安装器：一键解析并安装缺失的美化工具链、Nerd Fonts 字体与 Shell 前缀集成。"""
+    """内嵌智能安装器：一键调用系统包管理器安装缺失工具，并配置 Shell 工作目录提示符集成。"""
     helper = DependencyHelper()
 
     if hooks_only:
@@ -992,15 +991,6 @@ def install_dependencies(
         res = helper.inject_shell_hooks(["fish", "zsh", "bash"])
         for sh, ok, msg in res:
             console.print(f"[{'green' if ok else 'yellow'}]✓ {sh}: {msg}[/]")
-        return
-
-    if fonts_only:
-        console.print("[bold cyan]正在下载并安装 MesloLGS Nerd Font 全套字体...[/bold cyan]")
-        ok, msg = helper.install_meslo_nerd_font()
-        if ok:
-            console.print(f"[bold green]✓ {msg}[/bold green]")
-        else:
-            console.print(f"[bold red]✗ {msg}[/bold red]")
         return
 
     # 若选择 --all 或 --terminal:
@@ -1011,10 +1001,7 @@ def install_dependencies(
         if terminal_only and not c.essential:
             continue
         if not c.installed:
-            if c.name == "MesloLGS Nerd Font":
-                console.print("[bold cyan]正在自动下载安装 MesloLGS Nerd Font...[/bold cyan]")
-                helper.install_meslo_nerd_font()
-            elif c.name in ("kitty", "starship", "fastfetch", "eza", "bat", "zoxide"):
+            if c.name in ("kitty", "starship", "fastfetch", "eza", "bat", "zoxide"):
                 missing_pkgs.append(c.name)
 
     if missing_pkgs:

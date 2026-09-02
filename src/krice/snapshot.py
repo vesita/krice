@@ -50,7 +50,6 @@ TRACKED_TARGETS = [
     ("data", "icons/Tela-circle"),
     ("data", "icons/Tela-circle-nord-light"),
     ("data", "icons/Tela-circle-light"),
-    ("data", "fonts"),
 ]
 
 
@@ -143,13 +142,9 @@ class SnapshotManager:
             missing_pkgs: List[str] = []
             for check in self.installer.check_all():
                 if check.essential and not check.installed:
-                    if check.name == "MesloLGS Nerd Font":
-                        self.installer.install_meslo_nerd_font()
-                    else:
-                        missing_pkgs.append(check.name)
+                    missing_pkgs.append(check.name)
             if missing_pkgs:
                 self.installer.install_packages(missing_pkgs)
-
         # Create safety backup of existing configs
         if create_backup and not self.dry_run:
             now_str = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -213,13 +208,6 @@ class SnapshotManager:
             # 1. Ensure Starship prompt hooks are present in user shells
             if wire_shell_hooks:
                 self.installer.inject_shell_hooks(["fish", "zsh", "bash"])
-
-            # 2. Update font cache
-            if (self.data_dir / "fonts").exists() and shutil.which("fc-cache"):
-                try:
-                    subprocess.run(["fc-cache", "-f", str(self.data_dir / "fonts")], check=False, capture_output=True)
-                except Exception:
-                    pass
 
             # 3. Live reload KWin
             kwin = KWinController()

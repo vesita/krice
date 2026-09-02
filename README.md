@@ -43,16 +43,13 @@ uv run krice status
 uv run krice doctor
 ```
 
-### 2. 内嵌安装器（补齐依赖、字体与 Shell 提示符）
+### 2. 内嵌安装器（通过包管理器补齐依赖与配置 Shell 提示符）
 ```bash
-# 一键自动安装所有缺失软件包、下载 MesloLGS 字体并配置 Shell 提示符
+# 一键通过系统包管理器安装所有缺失软件包并自动配置 Shell 提示符
 uv run krice install --all
 
-# 仅在 fish、zsh、bash 中注入 Starship 工作目录前缀提示符
+# 仅在 fish、zsh、bash 中注入 Starship 工作目录前缀提示符挂钩
 uv run krice install --hooks
-
-# 仅下载并安装 MesloLGS Nerd Font 官方全套字重至 ~/.local/share/fonts/
-uv run krice install --fonts
 ```
 
 ### 3. 全局桌面方案一键切换 (KDE + Kitty + Shell + 动效)
