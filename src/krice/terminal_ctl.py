@@ -494,9 +494,10 @@ font_size        {font_size}
 
 # Window & Frosted Glass Transparency
 window_padding_width 0
-background_opacity 0.88
+background_opacity 0.78
 background_blur 32
 dynamic_background_opacity yes
+
 # Cursor
 cursor_shape beam
 cursor_beam_thickness 1.8
@@ -523,6 +524,11 @@ map ctrl+shift+2 goto_tab 2
 map ctrl+shift+3 goto_tab 3
 map ctrl+shift+4 goto_tab 4
 map ctrl+shift+5 goto_tab 5
+
+# Live Opacity Adjustments
+map ctrl+shift+u set_background_opacity +0.05
+map ctrl+shift+o set_background_opacity -0.05
+map ctrl+shift+delete set_background_opacity default
 """
                 main_config.write_text(default_kitty_conf, encoding="utf-8")
             # Signal Kitty if running
