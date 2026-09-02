@@ -503,15 +503,15 @@ cursor_shape beam
 cursor_beam_thickness 1.8
 cursor_blink_interval 0.5
 
-# Tab Bar Styling (Top Powerline Slanted Tabs)
+# Tab Bar Styling (Top Powerline Rounded Bubble Tabs)
 tab_bar_edge top
 tab_bar_style powerline
-tab_powerline_style slanted
+tab_powerline_style round
 tab_bar_min_tabs 1
-tab_bar_margin_width 4.0
-tab_bar_margin_height 4.0 0.0
+tab_bar_margin_width 6.0
+tab_bar_margin_height 6.0 0.0
 tab_title_template " 󰓩 {{index}}: {{title}} "
-active_tab_font_style bold-italic
+active_tab_font_style bold
 inactive_tab_font_style normal
 
 # Shortcuts
