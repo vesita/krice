@@ -9,8 +9,8 @@ from krice.presets.terminal_palettes import TerminalPalette
 def generate_starship_config(palette: TerminalPalette) -> str:
     """生成匹配调色板的现代圆角药丸胶囊风格 starship.toml 配置文件。"""
     bg_pill_1 = palette.cyan if palette.is_dark else palette.blue
-    fg_pill_1 = palette.background if palette.is_dark else palette.foreground
-    bg_pill_2 = palette.selection_bg
+    fg_pill_1 = palette.background if palette.is_dark else "#FFFFFF"
+    bg_pill_2 = palette.selection_bg if palette.is_dark else "#FFFFFF"
     fg_pill_2 = palette.foreground
     accent_blue = palette.blue
     accent_green = palette.green
@@ -25,17 +25,14 @@ format = \"\"\"
 [  ](bg:{bg_pill_1} fg:{fg_pill_1})\\
 [](bg:{bg_pill_2} fg:{bg_pill_1})\\
 $directory\\
-[](fg:{bg_pill_2} bg:{palette.selection_bg})\\
 $git_branch\\
 $git_status\\
-[](fg:{palette.selection_bg} bg:{bg_pill_2})\\
 $rust\\
 $golang\\
 $python\\
 $nodejs\\
-[](fg:{bg_pill_2} bg:{palette.selection_bg})\\
 $cmd_duration\\
-[ ](fg:{palette.selection_bg})\\
+[ ](fg:{bg_pill_2})\\
 $character
 \"\"\"
 
@@ -49,38 +46,37 @@ truncation_symbol = "…/"
 
 [git_branch]
 symbol = ""
-style = "fg:{accent_blue} bg:{palette.selection_bg} bold"
-format = "[ $symbol $branch ]($style)"
+style = "fg:{accent_blue} bg:{bg_pill_2} bold"
+format = "[$symbol $branch ]($style)"
 
 [git_status]
-style = "fg:{accent_yellow} bg:{palette.selection_bg}"
+style = "fg:{accent_yellow} bg:{bg_pill_2}"
 format = "[$all_status$ahead_behind ]($style)"
 
 [rust]
 symbol = ""
 style = "fg:{accent_red} bg:{bg_pill_2} bold"
-format = "[ $symbol ($version) ]($style)"
+format = "[$symbol ($version) ]($style)"
 
 [golang]
 symbol = ""
 style = "fg:{accent_blue} bg:{bg_pill_2} bold"
-format = "[ $symbol ($version) ]($style)"
+format = "[$symbol ($version) ]($style)"
 
 [python]
 symbol = ""
 style = "fg:{accent_green} bg:{bg_pill_2} bold"
-format = "[ $symbol ($version) ]($style)"
+format = "[$symbol ($version) ]($style)"
 
 [nodejs]
 symbol = ""
 style = "fg:{accent_green} bg:{bg_pill_2} bold"
-format = "[ $symbol ($version) ]($style)"
+format = "[$symbol ($version) ]($style)"
 
 [cmd_duration]
 min_time = 500
-style = "fg:{accent_blue} bg:{palette.background}"
-format = "[ ⏱ $duration ]($style)"
-
+style = "fg:{palette.cyan if palette.is_dark else palette.blue} bg:{bg_pill_2}"
+format = "[⏱ $duration ]($style)"
 [character]
 success_symbol = "[❯](bold {accent_blue})"
 error_symbol = "[❯](bold {accent_red})"
