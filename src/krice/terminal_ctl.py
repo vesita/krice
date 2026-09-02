@@ -177,10 +177,10 @@ class TerminalController:
             "ghostty": shutil.which("ghostty") is not None or (self.config_dir / "ghostty").exists(),
             "foot": shutil.which("foot") is not None or (self.config_dir / "foot").exists(),
             "wezterm": shutil.which("wezterm") is not None or (self.config_dir / "wezterm").exists(),
+            "zellij": shutil.which("zellij") is not None or (self.config_dir / "zellij").exists(),
             "starship": shutil.which("starship") is not None or (self.home / ".local" / "bin" / "starship").exists() or (self.config_dir / "starship.toml").exists(),
             "fastfetch": shutil.which("fastfetch") is not None or (self.config_dir / "fastfetch").exists(),
         }
-
     # --- Terminal Applications Application Logic ---
 
     # 1. Konsole (KDE Native)
@@ -620,6 +620,50 @@ return config
         except Exception as e:
             return False, f"Failed to update WezTerm theme: {e}"
 
+    # 6b. Zellij (Terminal Multiplexer)
+    def apply_zellij(self, palette: TerminalPalette) -> tuple[bool, str]:
+        """Applies theme to Zellij terminal multiplexer."""
+        if self.dry_run:
+            return True, f"[Dry-run] Would apply Zellij color theme: {palette.name}"
+
+        zellij_dir = self.config_dir / "zellij"
+        themes_dir = zellij_dir / "themes"
+        themes_dir.mkdir(parents=True, exist_ok=True)
+        theme_file = themes_dir / f"krice-{palette.name}.kdl"
+
+        theme_kdl = f"""themes {{
+    "krice-{palette.name}" {{
+        fg "{palette.foreground}"
+        bg "{palette.background}"
+        black "{palette.black}"
+        red "{palette.red}"
+        green "{palette.green}"
+        yellow "{palette.yellow}"
+        blue "{palette.blue}"
+        magenta "{palette.magenta}"
+        cyan "{palette.cyan}"
+        white "{palette.white}"
+        orange "{palette.bright_red}"
+    }}
+}}
+"""
+        try:
+            theme_file.write_text(theme_kdl, encoding="utf-8")
+            config_file = zellij_dir / "config.kdl"
+            if config_file.exists():
+                c_txt = config_file.read_text(encoding="utf-8")
+                if "theme " in c_txt:
+                    c_txt = re.sub(r'theme\s+["\'].*?["\']', f'theme "krice-{palette.name}"', c_txt)
+                else:
+                    c_txt = f'theme "krice-{palette.name}"\n' + c_txt
+                config_file.write_text(c_txt, encoding="utf-8")
+            else:
+                config_file.write_text(f'theme "krice-{palette.name}"\n', encoding="utf-8")
+
+            return True, f"Zellij color theme set to 'krice-{palette.name}'."
+        except Exception as e:
+            return False, f"Failed to update Zellij theme: {e}"
+
     # 7. Starship Shell Prompt
     def apply_starship(self, palette: TerminalPalette) -> tuple[bool, str]:
         """Applies matching Starship prompt theme."""
@@ -684,6 +728,9 @@ return config
 
         if detected.get("wezterm", False) or (self.config_dir / "wezterm").exists():
             results["WezTerm"] = self.apply_wezterm(palette)
+
+        if detected.get("zellij", False) or (self.config_dir / "zellij").exists():
+            results["Zellij"] = self.apply_zellij(palette)
 
         if detected.get("starship", True):
             results["Starship"] = self.apply_starship(palette)

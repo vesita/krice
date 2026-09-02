@@ -742,6 +742,18 @@ def set_wezterm_theme(
     console.print(f"[{'bold green' if ok else 'bold red'}]{msg}[/]")
 
 
+
+@terminal_app.command("set-zellij")
+def set_zellij_theme(
+    palette_name: str = typer.Argument(..., help="Palette name"),
+    dry_run: bool = typer.Option(False, "--dry-run", "-n"),
+) -> None:
+    """Apply palette specifically to Zellij."""
+    term_ctl = TerminalController(dry_run=dry_run)
+    pal = term_ctl.get_palette(palette_name.lower()) or term_ctl.extract_palette_from_kde()
+    ok, msg = term_ctl.apply_zellij(pal)
+    console.print(f"[{'bold green' if ok else 'bold red'}]{msg}[/]")
+
 @terminal_app.command("set-starship")
 def set_starship_theme(
     palette_name: str = typer.Argument(..., help="Palette name"),

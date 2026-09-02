@@ -96,6 +96,13 @@ def test_terminal_controller_file_generation(tmp_path: Path) -> None:
     wezterm_theme = term_ctl.config_dir / "wezterm" / "colors" / f"krice-{CACHY_NORD.name}.toml"
     assert wezterm_theme.exists()
 
+
+    # 6b. Test Zellij apply
+    ok, msg = term_ctl.apply_zellij(CACHY_NORD)
+    assert ok is True
+    zellij_theme = term_ctl.config_dir / "zellij" / "themes" / f"krice-{CACHY_NORD.name}.kdl"
+    assert zellij_theme.exists()
+    assert f'theme "krice-{CACHY_NORD.name}"' in (term_ctl.config_dir / "zellij" / "config.kdl").read_text()
     # 7. Test Starship & Fastfetch
     ok_s, _ = term_ctl.apply_starship(CACHY_NORD)
     assert ok_s is True
@@ -151,4 +158,7 @@ def test_terminal_cli_commands() -> None:
     assert "Dracula" in res_export.output
 
     res_konsole = runner.invoke(app, ["terminal", "set-konsole", "cachy-nord", "--dry-run"])
+
+    res_zellij = runner.invoke(app, ["terminal", "set-zellij", "cachy-nord", "--dry-run"])
+    assert res_zellij.exit_code == 0
     assert res_konsole.exit_code == 0
