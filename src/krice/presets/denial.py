@@ -1,52 +1,52 @@
-"""Denial-inspired Flutter fluid motion presets for KWin."""
+"""DenialWM / Flutter 灵动物理流体动效预设方案。"""
 
 from krice.presets import MotionPreset
 
-# DenialWM style: Snappy Flutter EaseOut scaling (0.50x, 150ms, 92%->100%), Squash minimize & Smooth window focus switching
+# DenialWM 风格：灵动极速 Flutter EaseOut 缩放 (0.50x 缩放因子, 150ms 持续时间, 92%->100% 微弹), Squash 挤压折叠与顺滑失焦暗化
 DENIAL_PRESET = MotionPreset(
     name="denial",
-    description="DenialWM / Flutter-like fluid scale animation (snappy 0.50x speed, 92%->100% micro-pop, Squash minimize)",
+    description="DenialWM / Flutter 灵动流体缩放动效（0.50x 极速, 92%->100% 微弹, Squash 任务栏折叠）",
     animation_factor=0.50,
     enabled_plugins=[
-        "scale",              # Primary window open/close scale effect
-        "squash",             # Fluid minimize / restore to taskbar icon
-        "morphingpopups",     # Smooth popup transitions
-        "blur",               # Background blur for translucent windows
-        "slidingpopups",      # Smooth OSD / notifications
-        "diminactive",        # Subtle background dimming on window focus switch
+        "scale",              # 核心窗口打开/关闭缩放动效
+        "squash",             # 任务栏图标挤压/展开最小化动效
+        "morphingpopups",     # 弹出菜单与气泡平滑形变
+        "blur",               # 半透明窗口背景毛玻璃模糊
+        "slidingpopups",      # 通知气泡与 OSD 平滑滑动
+        "diminactive",        # 窗口焦点切换时非激活窗口 10% 柔和失焦暗化
     ],
     disabled_plugins=[
-        "fade",               # Disable plain fade to avoid conflict with scale
-        "glide",              # Disable glide to prioritize isotropic scale
+        "fade",               # 禁用生硬的淡入淡出，避免与缩放动效冲突
+        "glide",              # 禁用滑动以优先保证等比例流体缩放
         "magiclamp",
     ],
     plugin_configs={
         "Effect-Scale": {
-            "ScaleType": 0,    # 0 = Window center, 1 = Cursor position
-            "Duration": 150,   # 150ms crisp duration for instant fluid pop without 60Hz stepping
-            "InScale": 0.92,   # Subtle 92% -> 100% pop for zero visual drag
+            "ScaleType": 0,    # 0 = 窗口中心缩放, 1 = 鼠标位置缩放
+            "Duration": 150,   # 150ms 紧凑持续时间，消除 60Hz 屏幕帧步进拖沓感
+            "InScale": 0.92,   # 92% -> 100% 微弹弹出，绝无拖泥带水之感
             "OutScale": 0.92,
         },
         "Effect-Blur": {
-            "BlurStrength": 10,
+            "BlurStrength": 12, # 12 级深度亚克力磨砂高斯模糊
             "NoiseStrength": 0,
         },
         "Effect-Diminactive": {
-            "DimStrength": 10,  # 10% subtle dimming on inactive windows for clear switching feedback
+            "DimStrength": 10,  # 非激活窗口 10% 柔和微暗，焦点切换清晰自然
         },
     },
     notes=[
-        "Crisp 150ms / 0.50x speed calibration eliminating 60Hz display frame stepping.",
-        "Subtle 92% -> 100% Ease-Out pop with zero drag or sluggishness.",
-        "Squash animation smoothly collapses/expands windows to/from taskbar icons.",
-        "DimInactive provides smooth visual focus transition when clicking between open windows.",
+        "精准校准 150ms / 0.50x 极速因子，彻底消除 60Hz 显示器刷新率下的帧步进延迟感。",
+        "92% -> 100% Ease-Out 微缩放弹出曲线，提供如同 iOS / Flutter 的灵动画布质感。",
+        "Squash 挤压折叠动效在最小化与恢复时顺滑收缩至任务栏图标。",
+        "DimInactive 在多窗口鼠标点击切换焦点时提供平滑的视觉过渡反馈。",
     ],
 )
 
-# Denial Vivid: Pronounced zoom with fluid snappy speed
+# Denial Vivid：更具视觉张力的深层流体缩放
 DENIAL_VIVID_PRESET = MotionPreset(
     name="denial-vivid",
-    description="Vivid Denial fluid motion (pronounced zoom from 80% scale with 0.60x snappy speed)",
+    description="Vivid 鲜活流体缩放（80% 深层放大，0.60x 灵动速度）",
     animation_factor=0.60,
     enabled_plugins=[
         "scale",
@@ -77,6 +77,6 @@ DENIAL_VIVID_PRESET = MotionPreset(
         },
     },
     notes=[
-        "Pronounced zoom-in from 80% window size with fluid Squash minimize and focus transitions.",
+        "从 80% 窗口尺寸展开的深层流体放大动效，搭配 Squash 任务栏折叠与焦点微暗。",
     ],
 )

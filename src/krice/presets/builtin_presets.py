@@ -1,11 +1,11 @@
-"""Catalog of built-in motion presets for krice."""
+"""krice 内置 KWin 窗口流体动效预设方案库。"""
 
 from krice.presets import MotionPreset
 from krice.presets.denial import DENIAL_PRESET, DENIAL_VIVID_PRESET
 
 GLIDE_PRESET = MotionPreset(
     name="glide",
-    description="Physical sheet/glide motion (smooth directional sliding with angular tilt)",
+    description="物理滑翔动效（带有轻微倾角的平滑方向性滑动）",
     animation_factor=0.60,
     enabled_plugins=["glide", "squash", "morphingpopups", "blur", "slidingpopups", "diminactive"],
     disabled_plugins=["scale", "fade", "magiclamp"],
@@ -21,12 +21,12 @@ GLIDE_PRESET = MotionPreset(
             "DimStrength": 10,
         },
     },
-    notes=["Window slides in like a physical sheet of paper with subtle angle and quick response."],
+    notes=["窗口如实体纸张般快速滑入，带有微小倾角与灵敏响应。"],
 )
 
 MAGIC_LAMP_PRESET = MotionPreset(
     name="magic-lamp",
-    description="Classic macOS Genie / Magic Lamp wave animation on minimize & restore",
+    description="经典 macOS 神灯波浪卷轴最小化与恢复动效",
     animation_factor=0.65,
     enabled_plugins=["scale", "magiclamp", "morphingpopups", "blur", "slidingpopups", "diminactive"],
     disabled_plugins=["fade", "glide", "squash"],
@@ -43,12 +43,12 @@ MAGIC_LAMP_PRESET = MotionPreset(
             "DimStrength": 10,
         },
     },
-    notes=["Classic genie wave curve on minimize and restore to taskbar icon."],
+    notes=["最小化和恢复至任务栏图标时呈现优美的神灯弧线折叠波浪。"],
 )
 
 SNAPPY_PRESET = MotionPreset(
     name="snappy",
-    description="Competitive / ultra-fast responsive animations (instant feedback)",
+    description="高刷电竞 / 极速响应流体动效（即时反馈）",
     animation_factor=0.30,
     enabled_plugins=["scale", "squash", "morphingpopups", "slidingpopups"],
     disabled_plugins=["fade", "glide", "magiclamp", "wobblywindows", "diminactive"],
@@ -60,12 +60,12 @@ SNAPPY_PRESET = MotionPreset(
             "OutScale": 0.95,
         }
     },
-    notes=["Blazing fast 90ms scale response for instantaneous UI reactivity."],
+    notes=["极速 90ms 缩放响应，带来零延迟的即时操作反馈。"],
 )
 
 SPRING_WOBBLY_PRESET = MotionPreset(
     name="spring-wobbly",
-    description="Tactile organic physics with subtle wobbly spring bounce and scale",
+    description="触觉弹性物理动效（带有轻微果冻弹簧回弹与流体缩放）",
     animation_factor=0.75,
     enabled_plugins=["scale", "wobblywindows", "squash", "morphingpopups", "blur", "slidingpopups", "diminactive"],
     disabled_plugins=["fade", "glide", "magiclamp"],
@@ -82,7 +82,7 @@ SPRING_WOBBLY_PRESET = MotionPreset(
             "DimStrength": 10,
         },
     },
-    notes=["Playful bouncing spring physics when moving and opening windows."],
+    notes=["移动和打开窗口时带有自然的果冻弹簧物理回弹质感。"],
 )
 
 PRESETS: dict[str, MotionPreset] = {

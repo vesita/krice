@@ -1,4 +1,4 @@
-"""Unified Desktop Rice (Visual Theme + Terminal + Motion) Presets."""
+"""全局桌面美化方案库（融合 KDE 全局主题 + 窗口装饰 + 多终端调色 + 物理动效）。"""
 
 from __future__ import annotations
 
@@ -8,346 +8,238 @@ from typing import Optional
 
 @dataclass
 class RicePreset:
-    """Complete unified desktop aesthetic preset encompassing KDE theme, terminal theme, and motion physics."""
+    """整合式桌面美化方案数据结构，统筹 KDE 主题、终端配色与 KWin 动效。"""
 
     name: str
     description: str
+    is_dark: bool = True
     global_theme: Optional[str] = None
     color_scheme: Optional[str] = None
-    cursor_theme: Optional[str] = None
-    cursor_size: Optional[int] = 24
-    icon_theme: Optional[str] = None
     plasma_style: Optional[str] = None
     widget_style: Optional[str] = None
     kvantum_theme: Optional[str] = None
     window_decoration_lib: Optional[str] = None
     window_decoration_theme: Optional[str] = None
-    terminal_palette: Optional[str] = None
+    cursor_theme: Optional[str] = None
+    cursor_size: int = 24
+    icon_theme: Optional[str] = None
     gtk_theme: Optional[str] = None
-    is_dark: bool = True
+    terminal_palette: Optional[str] = None
     motion_preset: str = "denial"
     notes: list[str] = field(default_factory=list)
 
 
-# --- 1. CachyOS Nord Dark (Arctic Dark Aesthetic) ---
+# --- 1. CachyOS Nord 暗色风格 ---
 CACHY_NORD_RICE = RicePreset(
-    name="cachy-nord",
-    description="CachyOS Nordic Arctic Dark (Deep blue-gray palette, Nordic icons, Denial fluid scale & Nord terminal sync)",
-    global_theme="Nordic",
-    color_scheme="CachyOSNord",
-    cursor_theme="Nordzy-cursors",
-    cursor_size=24,
-    icon_theme="Nordic-Darker",
-    plasma_style="Nordic",
-    widget_style="kvantum",
-    kvantum_theme="Nordic",
-    window_decoration_lib="klassy",
-    window_decoration_theme="Nordic",
-    terminal_palette="cachy-nord",
-    gtk_theme="Nordic",
+    name="CachyOS Arctic Nord",
+    description="北欧极光深邃暗色风格，搭配 CachyOS 标志性青色强调与流体缩放",
     is_dark=True,
+    global_theme="com.github.vinceliuice.Orchis-dark",
+    color_scheme="CachyOSNord",
+    plasma_style="Orchis-dark",
+    widget_style="Breeze",
+    kvantum_theme="Nordic",
+    window_decoration_lib="org.kde.breeze",
+    cursor_theme="Vimix-cursors",
+    cursor_size=24,
+    icon_theme="Tela-circle-nord",
+    gtk_theme="Orchis-Dark",
+    terminal_palette="cachy-nord",
     motion_preset="denial",
     notes=[
-        "Matches KDE Arctic Dark palette with synchronized Nord Alacritty/Kitty/Konsole/Ghostty.",
-        "Generates custom Starship Nord pill prompt & Fastfetch cyber-cyan logo display.",
-        "Fluid DenialWM 65% -> 100% window scale with background blur.",
+        "Breeze 原生 C++ 亚像素窗口装饰，彻底消除 1.7x 分数缩放下的像素错位。",
+        "Starship 胶囊提示符，显示当前工作目录、Git 状态与执行耗时。",
+        "Kitty 终端圆角药丸 Tab，亚克力毛玻璃模糊透明。",
     ],
 )
 
-# --- 2. Nord Lightly / Snow Storm (Semi-Light Arctic Daylight) ---
-NORD_LIGHTLY_RICE = RicePreset(
-    name="nord-lightly",
-    description="Nord Snow Storm Semi-Light (Eye-friendly off-white canvas, crisp frost accents, Glide motion & Light terminal sync)",
-    global_theme="Nordic-Polar",
-    color_scheme="NordSnowStorm",
-    cursor_theme="Nordzy-cursors-white",
-    cursor_size=24,
-    icon_theme="Nordic-Folders",
-    plasma_style="default",
-    widget_style="Breeze",
-    window_decoration_lib="org.kde.breeze",
-    terminal_palette="nord-light",
-    gtk_theme="Nordic-Polar",
+# --- 2. 冰青极光浅色风格 (Cyan Mint Light) ---
+CYAN_MINT_LIGHT_RICE = RicePreset(
+    name="Cyan Mint Glacier Light",
+    description="清新柔和的冰青极光浅色风格（湖水青主调、半透明磨砂亚克力与圆角药丸胶囊）",
     is_dark=False,
-    motion_preset="glide",
+    global_theme="com.github.vinceliuice.Orchis",
+    color_scheme="Orchis",
+    plasma_style="Orchis",
+    widget_style="Breeze",
+    kvantum_theme="Default",
+    window_decoration_lib="org.kde.breeze",
+    cursor_theme="Vimix-cursors",
+    cursor_size=24,
+    icon_theme="Tela-circle",
+    gtk_theme="Orchis-Light",
+    terminal_palette="cyan-light",
+    motion_preset="denial",
     notes=[
-        "Comfortable daylight aesthetic without harsh pure-white glare (#ECEFF4 background).",
-        "Glide sheet motion (smooth angle tilt) with matching light terminal palette.",
+        "冰青极光高对比度调色板，在浅色背景下提供 5.2:1 的优异文字可读性。",
+        "Kitty 顶部圆角药丸 Tab 与 0.78 亚克力毛玻璃磨砂玻璃质感。",
+        "Starship 全圆角胶囊药丸提示符（包含当前工作目录胶囊、Git 与耗时指示）。",
     ],
 )
 
-# --- 3. Catppuccin Mocha (Modern Soothing Dark Pastel) ---
+# --- 3. Catppuccin Mocha 现代柔和暗色 ---
 CATPPUCCIN_MOCHA_RICE = RicePreset(
-    name="catppuccin-mocha",
-    description="Catppuccin Mocha (Soothing dark pastel, Lavender/Mauve accents, Denial fluid motion & Catppuccin terminal)",
+    name="Catppuccin Mocha",
+    description="舒缓柔和的摩卡粉彩暗色风格，搭配紫色高亮与 150ms 灵动弹簧动效",
+    is_dark=True,
     global_theme="Catppuccin-Mocha-Mauve",
     color_scheme="CatppuccinMochaMauve",
+    plasma_style="Catppuccin-Mocha-Mauve",
+    widget_style="Breeze",
+    kvantum_theme="Catppuccin-Mocha-Mauve",
+    window_decoration_lib="org.kde.breeze",
     cursor_theme="Catppuccin-Mocha-Mauve-Cursors",
     cursor_size=24,
     icon_theme="Papirus-Dark",
-    plasma_style="Catppuccin-Mocha",
-    widget_style="kvantum",
-    kvantum_theme="Catppuccin-Mocha-Mauve",
-    window_decoration_lib="klassy",
-    terminal_palette="catppuccin-mocha",
     gtk_theme="Catppuccin-Mocha-Standard-Mauve-Dark",
-    is_dark=True,
+    terminal_palette="catppuccin-mocha",
     motion_preset="denial",
     notes=[
-        "Modern developer aesthetic with soft pastel highlights.",
-        "Deep contrast with #1E1E2E canvas and vibrant Lavender/Peach accents.",
+        "柔和的摩卡低对比度护眼暗色，全终端调色板与 Starship 深度匹配。",
     ],
 )
 
-# --- 4. Catppuccin Latte (Clean Soft Pastel Light) ---
+# --- 4. Catppuccin Latte 浅色奶油 ---
 CATPPUCCIN_LATTE_RICE = RicePreset(
-    name="catppuccin-latte",
-    description="Catppuccin Latte (Soft warm pastel light, Rosewater highlights, Glide motion & Latte terminal)",
-    global_theme="Catppuccin-Latte-Rosewater",
-    color_scheme="CatppuccinLatteRosewater",
-    cursor_theme="Catppuccin-Latte-Rosewater-Cursors",
+    name="Catppuccin Latte",
+    description="温馨明亮的奶油拿铁浅色风格",
+    is_dark=False,
+    global_theme="Catppuccin-Latte-Mauve",
+    color_scheme="CatppuccinLatteMauve",
+    plasma_style="Catppuccin-Latte-Mauve",
+    widget_style="Breeze",
+    kvantum_theme="Catppuccin-Latte-Mauve",
+    window_decoration_lib="org.kde.breeze",
+    cursor_theme="Catppuccin-Latte-Mauve-Cursors",
     cursor_size=24,
     icon_theme="Papirus-Light",
-    plasma_style="default",
-    widget_style="Breeze",
-    window_decoration_lib="org.kde.breeze",
+    gtk_theme="Catppuccin-Latte-Standard-Mauve-Light",
     terminal_palette="catppuccin-latte",
-    gtk_theme="Catppuccin-Latte-Standard-Rosewater-Light",
-    is_dark=False,
-    motion_preset="glide",
+    motion_preset="denial",
     notes=[
-        "Clean, gentle light mode with pleasant warmth (#EFF1F5).",
+        "优雅淡雅的暖白浅色风格，搭配精致粉彩 Accent 强调色。",
     ],
 )
 
-# --- 5. Tokyo Night (Neon Cyber Dark) ---
+# --- 5. Tokyo Night 霓虹赛博暗色 ---
 TOKYO_NIGHT_RICE = RicePreset(
-    name="tokyo-night",
-    description="Tokyo Night Storm (Neon cyberpunk dark, electric blue/magenta highlights & Denial Vivid deep zoom motion)",
-    global_theme="Tokyo-Night",
-    color_scheme="TokyoNightStorm",
-    cursor_theme="Bibata-Modern-Ice",
-    cursor_size=24,
-    icon_theme="Tela-circle-dark",
-    plasma_style="Tokyo-Night",
-    widget_style="kvantum",
-    kvantum_theme="Tokyo-Night",
-    window_decoration_lib="klassy",
-    terminal_palette="tokyo-night",
-    gtk_theme="Tokyo-Night",
+    name="Tokyo Night",
+    description="东京之夜赛博霓虹暗色风格，经典深蓝底色与荧光青强调色",
     is_dark=True,
-    motion_preset="denial-vivid",
+    global_theme="Tokyo-Night",
+    color_scheme="TokyoNight",
+    plasma_style="Tokyo-Night",
+    widget_style="Breeze",
+    kvantum_theme="Tokyo-Night",
+    window_decoration_lib="org.kde.breeze",
+    cursor_theme="Vimix-cursors",
+    cursor_size=24,
+    icon_theme="Tela-circle-blue",
+    gtk_theme="Tokyo-Night",
+    terminal_palette="tokyo-night",
+    motion_preset="denial",
     notes=[
-        "High-contrast neon dark theme with deep 50% -> 100% Denial Vivid zoom.",
+        "经典 Tokyo Night 霓虹蓝青调色板，全生态终端无缝热重载。",
     ],
 )
 
-# --- 6. Dracula (Classic Vampire Dark Purple) ---
+# --- 6. Dracula 经典暗紫 ---
 DRACULA_RICE = RicePreset(
-    name="dracula",
-    description="Dracula (Gothic dark purple canvas, electric pink/cyan accents, Snappy fast response & Dracula terminal)",
+    name="Dracula",
+    description="经典吸血鬼德古拉暗夜紫与粉色高亮风格",
+    is_dark=True,
     global_theme="Dracula",
     color_scheme="Dracula",
+    plasma_style="Dracula",
+    widget_style="Breeze",
+    kvantum_theme="Dracula",
+    window_decoration_lib="org.kde.breeze",
     cursor_theme="Dracula-cursors",
     cursor_size=24,
     icon_theme="Dracula",
-    plasma_style="Dracula",
-    widget_style="kvantum",
-    kvantum_theme="Dracula",
-    window_decoration_lib="org.kde.breeze",
-    terminal_palette="dracula",
     gtk_theme="Dracula",
-    is_dark=True,
-    motion_preset="snappy",
+    terminal_palette="dracula",
+    motion_preset="denial",
     notes=[
-        "Iconic dark purple palette with ultra-fast 120Hz/240Hz Snappy window animations.",
+        "高对比度冷峻紫色系风格，深受开发者喜爱。",
     ],
 )
 
-# --- 7. Gruvbox Dark (Warm Retro Groove) ---
+# --- 7. Gruvbox Dark 复古暖调暗色 ---
 GRUVBOX_DARK_RICE = RicePreset(
-    name="gruvbox-dark",
-    description="Gruvbox Dark (Warm retro groove, golden yellow/orange highlights, Spring-Wobbly bouncy physics)",
+    name="Gruvbox Dark",
+    description="复古极简暖调暗色风格，温暖柔和不刺眼",
+    is_dark=True,
     global_theme="Gruvbox-Dark",
     color_scheme="GruvboxDark",
-    cursor_theme="Capitaine-Cursors-Gruvbox",
+    plasma_style="Gruvbox-Dark",
+    widget_style="Breeze",
+    kvantum_theme="Gruvbox-Dark",
+    window_decoration_lib="org.kde.breeze",
+    cursor_theme="Capitaine-cursors",
     cursor_size=24,
     icon_theme="Gruvbox-Plus-Dark",
-    plasma_style="Gruvbox-Dark",
-    widget_style="kvantum",
-    kvantum_theme="Gruvbox-Dark",
-    window_decoration_lib="klassy",
-    terminal_palette="gruvbox-dark",
     gtk_theme="Gruvbox-Dark",
-    is_dark=True,
-    motion_preset="spring-wobbly",
-    notes=[
-        "Tactile organic bouncy spring window physics with cozy warm retro colors.",
-    ],
-)
-
-# --- 8. Gruvbox Light (Warm Cream Retro) ---
-GRUVBOX_LIGHT_RICE = RicePreset(
-    name="gruvbox-light",
-    description="Gruvbox Light (Comfortable parchment/cream aesthetic, warm terracotta accents, Glide motion)",
-    global_theme="Gruvbox-Light",
-    color_scheme="GruvboxLight",
-    cursor_theme="Capitaine-Cursors",
-    cursor_size=24,
-    icon_theme="Gruvbox-Plus-Light",
-    plasma_style="default",
-    widget_style="Breeze",
-    window_decoration_lib="org.kde.breeze",
-    terminal_palette="gruvbox-light",
-    gtk_theme="Gruvbox-Light",
-    is_dark=False,
-    motion_preset="glide",
-    notes=[
-        "Warm paper/parchment background (#FBF1C7) with retro typography and Glide sheet animations.",
-    ],
-)
-
-# --- 9. Rosé Pine (SoHo Vibes Dark Aesthetic) ---
-ROSE_PINE_RICE = RicePreset(
-    name="rose-pine",
-    description="Rosé Pine (All-natural SoHo vibes, subtle muted dark palette, pine green/rose accents & Denial motion)",
-    global_theme="Rose-Pine",
-    color_scheme="RosePine",
-    cursor_theme="Breeze_Dark",
-    cursor_size=24,
-    icon_theme="Papirus-Dark",
-    plasma_style="default",
-    widget_style="Breeze",
-    window_decoration_lib="org.kde.breeze",
-    terminal_palette="rose-pine",
-    gtk_theme="Rose-Pine",
-    is_dark=True,
+    terminal_palette="gruvbox-dark",
     motion_preset="denial",
     notes=[
-        "Elegantly muted, non-fatiguing dark theme with matching prompt & terminal.",
+        "复古温润的暖调色彩，全链路命令行与终端提示符深度定制。",
     ],
 )
 
-# --- 10. Orchis Dark (Material Design Modern Dark) ---
+# --- 8. Orchis Dark 极简暗色 ---
 ORCHIS_DARK_RICE = RicePreset(
-    name="orchis-dark",
-    description="Orchis Dark (Material Design dark canvas, vibrant blue highlights, Klassy rounded titlebars & Denial motion)",
-    global_theme="Orchis-dark",
+    name="Orchis Material Dark",
+    description="经典 Orchis Material Design 扁平暗色风格",
+    is_dark=True,
+    global_theme="com.github.vinceliuice.Orchis-dark",
     color_scheme="OrchisDark",
+    plasma_style="Orchis-dark",
+    widget_style="Breeze",
+    kvantum_theme="Orchis-dark",
+    window_decoration_lib="org.kde.breeze",
     cursor_theme="Vimix-cursors",
     cursor_size=24,
-    icon_theme="Tela-dark",
-    plasma_style="Orchis-dark",
-    widget_style="kvantum",
-    kvantum_theme="Orchis-dark",
-    window_decoration_lib="klassy",
-    terminal_palette="orchis-dark",
+    icon_theme="Tela-circle-dark",
     gtk_theme="Orchis-Dark",
-    is_dark=True,
+    terminal_palette="orchis-dark",
     motion_preset="denial",
     notes=[
-        "Combines smooth Material rounded corners with Denial fluid acceleration.",
+        "经典 Orchis 材质美学，轻快灵动。",
     ],
 )
 
-# --- 11. Orchis Light (Material Design Clean Light) ---
+# --- 9. Orchis Light 极简浅色 ---
 ORCHIS_LIGHT_RICE = RicePreset(
-    name="orchis-light",
-    description="Orchis Light (Material Design clean white/gray canvas, subtle shadows & Glide smooth tilt motion)",
-    global_theme="Orchis-light",
-    color_scheme="OrchisLight",
-    cursor_theme="Vimix-white-cursors",
+    name="Orchis Material Light",
+    description="纯净明亮的 Orchis Material Design 浅白风格",
+    is_dark=False,
+    global_theme="com.github.vinceliuice.Orchis",
+    color_scheme="Orchis",
+    plasma_style="Orchis",
+    widget_style="Breeze",
+    kvantum_theme="Default",
+    window_decoration_lib="org.kde.breeze",
+    cursor_theme="Vimix-cursors",
     cursor_size=24,
-    icon_theme="Tela-light",
-    plasma_style="default",
-    widget_style="kvantum",
-    kvantum_theme="Orchis-light",
-    window_decoration_lib="klassy",
-    terminal_palette="orchis-light",
+    icon_theme="Tela-circle",
     gtk_theme="Orchis-Light",
-    is_dark=False,
-    motion_preset="glide",
-    notes=[
-        "Crisp Material Design aesthetic with modern semi-light terminal sync.",
-    ],
-)
-
-# --- 12. Breeze Twilight Clean Hybrid ---
-BREEZE_TWILIGHT_RICE = RicePreset(
-    name="breeze-twilight",
-    description="Breeze Twilight Hybrid (Dark panel/dock + Light window canvas, native KDE Plasma 6 look & Glide motion)",
-    global_theme="org.kde.breezetwilight.desktop",
-    color_scheme="BreezeLight",
-    cursor_theme="breeze_cursors",
-    cursor_size=24,
-    icon_theme="breeze",
-    plasma_style="default",
-    widget_style="Breeze",
-    window_decoration_lib="org.kde.breeze",
-    terminal_palette="nord-light",
-    gtk_theme="Breeze",
-    is_dark=False,
-    motion_preset="glide",
-    notes=[
-        "Official KDE 6 hybrid aesthetic: dark launcher & system tray with light document area.",
-    ],
-)
-
-# --- 13. Deep Emerald Dark ---
-EMERALD_DARK_RICE = RicePreset(
-    name="emerald-dark",
-    description="Emerald Dark (Deep forest dark green, mint highlights, fluid Denial scaling & Emerald terminal sync)",
-    global_theme="Emerald-Dark",
-    color_scheme="EmeraldDark",
-    cursor_theme="Breeze_Dark",
-    cursor_size=24,
-    icon_theme="Papirus-Dark",
-    plasma_style="default",
-    widget_style="Breeze",
-    window_decoration_lib="org.kde.breeze",
-    terminal_palette="emerald-dark",
-    gtk_theme="Breeze-Dark",
-    is_dark=True,
+    terminal_palette="orchis-light",
     motion_preset="denial",
     notes=[
-        "Deep calming green atmosphere with matching terminal & Starship prompt.",
-    ],
-)
-
-# --- 14. One Dark (Developer Pro Dark) ---
-ONE_DARK_RICE = RicePreset(
-    name="one-dark",
-    description="One Dark (Atom / Pro Developer dark palette, Snappy ultra-responsive animations & One-Dark terminal)",
-    global_theme="One-Dark",
-    color_scheme="OneDark",
-    cursor_theme="Breeze_Dark",
-    cursor_size=24,
-    icon_theme="Papirus-Dark",
-    plasma_style="default",
-    widget_style="Breeze",
-    window_decoration_lib="org.kde.breeze",
-    terminal_palette="one-dark",
-    gtk_theme="Breeze-Dark",
-    is_dark=True,
-    motion_preset="snappy",
-    notes=[
-        "Balanced coding dark theme with instant responsive Snappy motion.",
+        "明亮纯净的浅色材质设计风格。",
     ],
 )
 
 RICE_PRESETS: dict[str, RicePreset] = {
     "cachy-nord": CACHY_NORD_RICE,
-    "nord-lightly": NORD_LIGHTLY_RICE,
+    "cyan-mint-light": CYAN_MINT_LIGHT_RICE,
+    "cyan-light": CYAN_MINT_LIGHT_RICE,
     "catppuccin-mocha": CATPPUCCIN_MOCHA_RICE,
     "catppuccin-latte": CATPPUCCIN_LATTE_RICE,
     "tokyo-night": TOKYO_NIGHT_RICE,
     "dracula": DRACULA_RICE,
     "gruvbox-dark": GRUVBOX_DARK_RICE,
-    "gruvbox-light": GRUVBOX_LIGHT_RICE,
-    "rose-pine": ROSE_PINE_RICE,
     "orchis-dark": ORCHIS_DARK_RICE,
     "orchis-light": ORCHIS_LIGHT_RICE,
-    "breeze-twilight": BREEZE_TWILIGHT_RICE,
-    "emerald-dark": EMERALD_DARK_RICE,
-    "one-dark": ONE_DARK_RICE,
 }

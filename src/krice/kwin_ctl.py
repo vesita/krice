@@ -1,4 +1,4 @@
-"""KWin and KDE Plasma 6 configuration & D-Bus controller."""
+"""KWin 与 KDE Plasma 6 合成器配置与 D-Bus 控制器。"""
 
 from __future__ import annotations
 
@@ -6,11 +6,11 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 
 class KWinController:
-    """Manages KWin effects, animation duration factors, and live reconfiguration."""
+    """管理 KWin 动效插件、动画持续时间缩放因子与合成器实时热重载。"""
 
     def __init__(self, dry_run: bool = False, home_dir: Optional[Path] = None) -> None:
         self.dry_run = dry_run
@@ -21,8 +21,8 @@ class KWinController:
         self.qdbus = shutil.which("qdbus6") or shutil.which("qdbus") or "qdbus6"
 
     def read_config(self, file: str, group: str, key: str, default: str = "") -> str:
-        """Reads a value from a KDE configuration file using kreadconfig or INI fallback."""
-        # Direct file parse if custom home/config
+        """从 KDE 配置文件中读取指定分组的键值（支持 kreadconfig 与直接 INI 文件解析回退）。"""
+        # 若指定了自定义主目录，则优先直接解析文件
         cfg_file = self.config_dir / file
         if cfg_file.exists():
             try:
@@ -49,7 +49,7 @@ class KWinController:
             return default
 
     def write_config(self, file: str, group: str, key: str, value: Any) -> bool:
-        """Writes a value to a KDE configuration file using kwriteconfig."""
+        """调用 kwriteconfig 向 KDE 配置文件中写入指定值。"""
         val_str = str(value)
         if self.dry_run:
             return True
@@ -63,7 +63,7 @@ class KWinController:
             return False
 
     def get_animation_factor(self) -> float:
-        """Returns the current KDE AnimationDurationFactor (1.0 is standard, 0.0 is instant)."""
+        """获取当前 KDE 动画持续时间缩放因子（1.0 为标准速度，0.0 为即时关闭）。"""
         raw = self.read_config("kdeglobals", "KDE", "AnimationDurationFactor", default="1.0")
         try:
             return float(raw)
@@ -71,83 +71,88 @@ class KWinController:
             return 1.0
 
     def set_animation_factor(self, factor: float) -> bool:
-        """Sets the KDE AnimationDurationFactor in kdeglobals."""
+        """设置 kdeglobals 中的 AnimationDurationFactor。"""
         factor = max(0.0, min(5.0, factor))
         return self.write_config("kdeglobals", "KDE", "AnimationDurationFactor", f"{factor:.2f}")
 
     def get_plugin_status(self, plugin_id: str) -> bool:
-        """Checks if a KWin effect plugin is enabled in kwinrc [Plugins]."""
+        """检查 kwinrc [Plugins] 中指定动效插件是否开启。"""
         raw = self.read_config("kwinrc", "Plugins", f"{plugin_id}Enabled", default="false")
         return raw.lower() in ("true", "1", "yes")
 
     def load_effect(self, effect_name: str) -> bool:
-        """Dynamically loads a KWin effect into live memory via D-Bus."""
+        """通过 D-Bus 接口向实时运行中的 KWin 内存直接加载指定动效。"""
         if self.dry_run:
             return True
-        cmd = [self.qdbus, "org.kde.KWin", "/Effects", "org.kde.kwin.Effects.loadEffect", effect_name]
         try:
-            res = subprocess.run(cmd, capture_output=True, text=True, check=False, timeout=3)
+            res = subprocess.run(
+                [self.qdbus, "org.kde.KWin", "/Effects", "org.kde.kwin.Effects.loadEffect", effect_name],
+                capture_output=True,
+                check=False,
+            )
             return res.returncode == 0
         except Exception:
             return False
 
     def unload_effect(self, effect_name: str) -> bool:
-        """Dynamically unloads a KWin effect from live memory via D-Bus."""
+        """通过 D-Bus 接口从实时运行中的 KWin 内存卸载指定动效。"""
         if self.dry_run:
             return True
-        cmd = [self.qdbus, "org.kde.KWin", "/Effects", "org.kde.kwin.Effects.unloadEffect", effect_name]
         try:
-            res = subprocess.run(cmd, capture_output=True, text=True, check=False, timeout=3)
+            res = subprocess.run(
+                [self.qdbus, "org.kde.KWin", "/Effects", "org.kde.kwin.Effects.unloadEffect", effect_name],
+                capture_output=True,
+                check=False,
+            )
             return res.returncode == 0
         except Exception:
             return False
 
     def set_plugin_status(self, plugin_id: str, enabled: bool) -> bool:
-        """Enables or disables a KWin effect plugin in kwinrc [Plugins] and hot-loads it in live memory."""
+        """在 kwinrc 中开启或禁用指定动效插件，并同步在内存中热加载/卸载。"""
         ok = self.write_config("kwinrc", "Plugins", f"{plugin_id}Enabled", "true" if enabled else "false")
-        if ok and not self.dry_run:
-            if enabled:
-                self.load_effect(plugin_id)
-            else:
-                self.unload_effect(plugin_id)
+        if enabled:
+            self.load_effect(plugin_id)
+        else:
+            self.unload_effect(plugin_id)
         return ok
 
     def set_effect_param(self, effect_name: str, key: str, value: Any) -> bool:
-        """Sets a parameter under [Effect-{effect_name}] in kwinrc."""
+        """设置 kwinrc 中 [Effect-{effect_name}] 下的特定物理参数。"""
         return self.write_config("kwinrc", f"Effect-{effect_name}", key, value)
 
     def reconfigure_kwin(self) -> tuple[bool, str]:
-        """Triggers KWin live reconfiguration and effects reload via D-Bus."""
+        """通过 D-Bus 触发 KWin 实时热重载合成器与动效配置。"""
         if self.dry_run:
-            return True, "[Dry-run] Simulated qdbus6 org.kde.KWin /KWin reconfigure"
-
-        cmd = [self.qdbus, "org.kde.KWin", "/KWin", "reconfigure"]
+            return True, "[演练模拟] 已触发 KWin 合成器热重载"
         try:
-            res = subprocess.run(cmd, capture_output=True, text=True, check=False, timeout=5)
+            res = subprocess.run(
+                [self.qdbus, "org.kde.KWin", "/KWin", "org.kde.KWin.reconfigure"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
             if res.returncode == 0:
-                return True, "KWin reconfigured successfully via D-Bus."
-            return False, f"Failed to reconfigure KWin: {res.stderr.strip()}"
+                return True, "KWin 合成器热重载成功"
+            return False, f"D-Bus 返回非零退出码: {res.stderr.strip()}"
         except Exception as e:
-            return False, f"Error calling D-Bus reconfigure: {e}"
+            return False, f"调用 D-Bus 重载失败: {e}"
 
     def get_tabbox_layout(self) -> str:
-        """Returns current Alt+Tab task switcher layout name."""
+        """获取当前 Alt+Tab 任务切换器的布局名称。"""
         return self.read_config("kwinrc", "TabBox", "LayoutName", default="org.kde.breeze.desktop")
 
     def set_tabbox_layout(self, layout_name: str) -> bool:
-        """Sets the Alt+Tab task switcher layout and enables 3D plugins if needed."""
+        """设置 Alt+Tab 任务切换器的布局并在需要时开启 3D 插件支持。"""
         ok = self.write_config("kwinrc", "TabBox", "LayoutName", layout_name)
-        self.write_config("kwinrc", "TabBox", "ShowTabBox", "true")
-        self.write_config("kwinrc", "TabBox", "HighlightWindows", "true")
-        
-        if layout_name == "coverswitch":
-            self.set_plugin_status("coverswitch", True)
-            self.set_plugin_status("flipswitch", False)
-        elif layout_name == "flipswitch":
-            self.set_plugin_status("flipswitch", True)
+        if layout_name in ("coverswitch", "flipswitch"):
+            self.set_plugin_status(layout_name, True)
+        elif layout_name == "thumbnail_grid":
             self.set_plugin_status("coverswitch", False)
+            self.set_plugin_status("flipswitch", False)
         return ok
+
     def get_kwin_effects_dir(self) -> Path:
-        """Returns the local user KWin scripted effects directory."""
+        """获取本地用户 KWin 自定义脚本动效存储目录。"""
         data_home = os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local" / "share"))
         return Path(data_home) / "kwin" / "effects"

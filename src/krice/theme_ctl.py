@@ -1,4 +1,4 @@
-"""KDE Plasma 6 Theming, Color Schemes, Icons, Cursors, Widget Styles, Kvantum, GTK & Wallpaper Controller."""
+"""KDE Plasma 6 全局主题、配色方案、图标、鼠标指针、Qt 控件样式、Kvantum、GTK 与壁纸控制器。"""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from krice.kwin_ctl import KWinController
 
 
 class ThemeController:
-    """Manages global themes, color schemes, icon themes, cursor themes, widget styles, Kvantum, GTK, and wallpapers."""
+    """全面管理 KDE 全局外观、配色方案、图标主题、鼠标指针、Qt 控件引擎、Kvantum 与 GTK 统一主题。"""
 
     def __init__(self, dry_run: bool = False, home_dir: Optional[Path] = None) -> None:
         self.dry_run = dry_run
@@ -27,12 +27,13 @@ class ThemeController:
         self.apply_lookandfeel_bin = shutil.which("plasma-apply-lookandfeel")
         self.apply_cursortheme_bin = shutil.which("plasma-apply-cursortheme")
         self.apply_wallpaper_bin = shutil.which("plasma-apply-wallpaperimage")
-    # ==================== 1. Color Schemes ====================
+
+    # ==================== 1. 配色方案 (Color Schemes) ====================
 
     def list_colorschemes(self) -> list[str]:
-        """Returns all available color schemes installed on the system."""
+        """列出系统中已安装的所有可用配色方案。"""
         if not self.apply_colorscheme_bin:
-            # Fallback scan directories
+            # 扫描标准配色目录作为回退
             scheme_dirs = [
                 Path("/usr/share/color-schemes"),
                 self.data_dir / "color-schemes",
@@ -59,106 +60,102 @@ class ThemeController:
             return []
 
     def get_current_colorscheme(self) -> str:
-        """Returns the name of the active color scheme."""
+        """获取当前正在生效的 KDE 配色方案名称。"""
         return self.kwin.read_config("kdeglobals", "General", "ColorScheme", default="Default")
 
     def apply_colorscheme(self, scheme_name: str) -> tuple[bool, str]:
-        """Applies a color scheme via plasma-apply-colorscheme or directly in kdeglobals."""
+        """应用指定的配色方案（调用 plasma-apply-colorscheme 或写入 kdeglobals）。"""
         if self.dry_run:
-            return True, f"[Dry-run] Would apply color scheme: {scheme_name}"
+            return True, f"[演练模拟] 将应用配色方案: {scheme_name}"
         if not self.apply_colorscheme_bin:
             ok = self.kwin.write_config("kdeglobals", "General", "ColorScheme", scheme_name)
             if ok:
                 self.kwin.reconfigure_kwin()
-                return True, f"Color scheme set to '{scheme_name}' in kdeglobals."
-            return False, "plasma-apply-colorscheme not found and failed writing kdeglobals."
+                return True, f"配色方案已设置为 '{scheme_name}'。"
+            return False, "未找到 plasma-apply-colorscheme 且写入 kdeglobals 失败。"
 
         try:
-            res = subprocess.run([self.apply_colorscheme_bin, scheme_name], capture_output=True, text=True, check=False)
+            res = subprocess.run(
+                [self.apply_colorscheme_bin, "-a", scheme_name],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
             if res.returncode == 0:
-                return True, f"Color scheme '{scheme_name}' applied successfully."
-            return False, res.stderr.strip() or res.stdout.strip()
+                self.kwin.reconfigure_kwin()
+                return True, f"配色方案已成功应用为 '{scheme_name}'。"
+            return False, f"应用配色方案失败: {res.stderr.strip()}"
         except Exception as e:
-            return False, f"Failed to apply color scheme: {e}"
+            return False, f"应用配色方案异常: {e}"
 
-    # ==================== 2. Global Look & Feel Themes ====================
+    # ==================== 2. 全局外观包 (Global Look-and-Feel) ====================
 
     def list_global_themes(self) -> list[str]:
-        """Returns all available global Look-and-Feel themes."""
-        if not self.apply_lookandfeel_bin:
-            dirs = [
-                Path("/usr/share/plasma/look-and-feel"),
-                self.data_dir / "plasma" / "look-and-feel",
-            ]
-            found = set()
-            for d in dirs:
-                if d.exists():
-                    for sub in d.iterdir():
-                        if sub.is_dir():
-                            found.add(sub.name)
-            return sorted(list(found))
-
-        try:
-            res = subprocess.run([self.apply_lookandfeel_bin, "-l"], capture_output=True, text=True, check=False)
-            lines = [line.strip() for line in res.stdout.strip().splitlines() if line.strip()]
-            return sorted(lines)
-        except Exception:
-            return []
+        """列出已安装的全局外观包 ID。"""
+        theme_dirs = [
+            Path("/usr/share/plasma/look-and-feel"),
+            self.data_dir / "plasma" / "look-and-feel",
+        ]
+        found: set[str] = set()
+        for d in theme_dirs:
+            if d.exists():
+                for sub in d.iterdir():
+                    if sub.is_dir() and ((sub / "metadata.json").exists() or (sub / "metadata.desktop").exists()):
+                        found.add(sub.name)
+        return sorted(list(found))
 
     def get_current_global_theme(self) -> str:
-        """Returns the current Look-and-Feel package ID."""
-        return self.kwin.read_config("kdeglobals", "KDE", "LookAndFeelPackage", default="org.kde.breezedark.desktop")
+        """获取当前生效的全局外观包 ID。"""
+        return self.kwin.read_config("kdeglobals", "KDE", "LookAndFeelPackage", default="org.kde.breeze.desktop")
 
-    def apply_global_theme(self, theme_name: str) -> tuple[bool, str]:
-        """Applies a global look-and-feel theme."""
+    def apply_global_theme(self, theme_id: str) -> tuple[bool, str]:
+        """应用全局外观包（调用 plasma-apply-lookandfeel）。"""
         if self.dry_run:
-            return True, f"[Dry-run] Would apply global theme: {theme_name}"
+            return True, f"[演练模拟] 将应用全局外观包: {theme_id}"
         if not self.apply_lookandfeel_bin:
-            return False, "plasma-apply-lookandfeel command not found."
-        try:
-            res = subprocess.run([self.apply_lookandfeel_bin, "-a", theme_name], capture_output=True, text=True, check=False)
-            if res.returncode == 0:
-                return True, f"Global theme '{theme_name}' applied successfully."
-            return False, res.stderr.strip() or res.stdout.strip()
-        except Exception as e:
-            return False, f"Failed to apply global theme: {e}"
+            ok = self.kwin.write_config("kdeglobals", "KDE", "LookAndFeelPackage", theme_id)
+            if ok:
+                self.kwin.reconfigure_kwin()
+                return True, f"全局外观包已写入 kdeglobals: '{theme_id}'。"
+            return False, "未找到 plasma-apply-lookandfeel 且写入 kdeglobals 失败。"
 
-    # ==================== 3. Cursor Themes ====================
+        try:
+            res = subprocess.run(
+                [self.apply_lookandfeel_bin, "-a", theme_id],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if res.returncode == 0:
+                self.kwin.reconfigure_kwin()
+                return True, f"全局外观包已成功应用为 '{theme_id}'。"
+            return False, f"应用全局外观包失败: {res.stderr.strip()}"
+        except Exception as e:
+            return False, f"应用全局外观包异常: {e}"
+
+    # ==================== 3. 鼠标指针 (Cursor Themes) ====================
 
     def list_cursor_themes(self) -> list[str]:
-        """Returns all available cursor themes."""
-        if not self.apply_cursortheme_bin:
-            dirs = [
-                Path("/usr/share/icons"),
-                self.data_dir / "icons",
-            ]
-            found = set()
-            for d in dirs:
-                if d.exists():
-                    for sub in d.iterdir():
-                        if sub.is_dir() and (sub / "cursors").exists():
-                            found.add(sub.name)
-            return sorted(list(found))
-
-        try:
-            res = subprocess.run([self.apply_cursortheme_bin, "--list-themes"], capture_output=True, text=True, check=False)
-            lines = [line.strip().lstrip("*").strip() for line in res.stdout.strip().splitlines() if line.strip()]
-            themes = []
-            for line in lines:
-                if "(当前主题)" in line or "(current theme)" in line:
-                    line = re.sub(r"\(.*?\)", "", line).strip()
-                if line and not line.startswith("您的系统") and not line.startswith("You have"):
-                    themes.append(line)
-            return sorted(list(set(themes)))
-        except Exception:
-            return []
+        """列出已安装的鼠标指针主题。"""
+        cursor_dirs = [
+            Path("/usr/share/icons"),
+            self.data_dir / "icons",
+            self.home / ".icons",
+        ]
+        found: set[str] = set()
+        for d in cursor_dirs:
+            if d.exists():
+                for sub in d.iterdir():
+                    if sub.is_dir() and (sub / "cursors").exists():
+                        found.add(sub.name)
+        return sorted(list(found))
 
     def get_current_cursor_theme(self) -> str:
-        """Returns the current cursor theme name."""
+        """获取当前生效的鼠标指针主题名称。"""
         return self.kwin.read_config("kcminputrc", "Mouse", "cursorTheme", default="breeze_cursors")
 
     def get_current_cursor_size(self) -> int:
-        """Returns the current cursor size."""
+        """获取当前鼠标指针大小像素值。"""
         raw = self.kwin.read_config("kcminputrc", "Mouse", "cursorSize", default="24")
         try:
             return int(raw)
@@ -166,30 +163,31 @@ class ThemeController:
             return 24
 
     def apply_cursor_theme(self, theme_name: str, size: Optional[int] = None) -> tuple[bool, str]:
-        """Applies a cursor theme and optional size."""
+        """应用指定的鼠标指针主题与大小。"""
         if self.dry_run:
-            return True, f"[Dry-run] Would apply cursor theme: {theme_name} (size: {size})"
-        if not self.apply_cursortheme_bin:
-            self.kwin.write_config("kcminputrc", "Mouse", "cursorTheme", theme_name)
-            if size:
-                self.kwin.write_config("kcminputrc", "Mouse", "cursorSize", str(size))
-            return True, f"Cursor theme set to '{theme_name}' in kcminputrc."
+            return True, f"[演练模拟] 将应用鼠标指针: {theme_name} ({size or '默认'}px)"
 
-        cmd = [self.apply_cursortheme_bin, theme_name]
+        # 写入 kcminputrc
+        self.kwin.write_config("kcminputrc", "Mouse", "cursorTheme", theme_name)
         if size:
-            cmd.extend(["--size", str(size)])
-        try:
-            res = subprocess.run(cmd, capture_output=True, text=True, check=False)
-            if res.returncode == 0:
-                return True, f"Cursor theme '{theme_name}' applied successfully."
-            return False, res.stderr.strip() or res.stdout.strip()
-        except Exception as e:
-            return False, f"Failed to apply cursor theme: {e}"
+            self.kwin.write_config("kcminputrc", "Mouse", "cursorSize", str(size))
 
-    # ==================== 4. Icon Themes ====================
+        if self.apply_cursortheme_bin:
+            try:
+                cmd = [self.apply_cursortheme_bin, theme_name]
+                if size:
+                    cmd.extend(["--size", str(size)])
+                subprocess.run(cmd, capture_output=True, check=False)
+            except Exception:
+                pass
+
+        self.kwin.reconfigure_kwin()
+        return True, f"鼠标指针已设置为 '{theme_name}'。"
+
+    # ==================== 4. 图标主题 (Icon Themes) ====================
 
     def list_icon_themes(self) -> list[str]:
-        """Scans standard icon search paths for installed icon themes."""
+        """列出已安装的图标主题。"""
         icon_dirs = [
             Path("/usr/share/icons"),
             self.data_dir / "icons",
@@ -203,23 +201,23 @@ class ThemeController:
         return sorted(list(found))
 
     def get_current_icon_theme(self) -> str:
-        """Returns the current icon theme name."""
-        return self.kwin.read_config("kdeglobals", "Icons", "Theme", default="breeze-dark")
+        """获取当前生效的图标主题名称。"""
+        return self.kwin.read_config("kdeglobals", "Icons", "Theme", default="breeze")
 
     def apply_icon_theme(self, theme_name: str) -> tuple[bool, str]:
-        """Sets the active icon theme in kdeglobals."""
+        """设置 kdeglobals 中的图标主题。"""
         if self.dry_run:
-            return True, f"[Dry-run] Would apply icon theme: {theme_name}"
+            return True, f"[演练模拟] 将应用图标主题: {theme_name}"
         ok = self.kwin.write_config("kdeglobals", "Icons", "Theme", theme_name)
         if ok:
             self.kwin.reconfigure_kwin()
-            return True, f"Icon theme set to '{theme_name}'."
-        return False, f"Failed to write icon theme '{theme_name}' to kdeglobals."
+            return True, f"图标主题已成功设置为 '{theme_name}'。"
+        return False, f"设置图标主题 '{theme_name}' 失败。"
 
-    # ==================== 5. Plasma Desktop Style (Panel/Taskbar) ====================
+    # ==================== 5. Plasma 桌面样式 (Panel/Taskbar Style) ====================
 
     def list_plasma_styles(self) -> list[str]:
-        """Returns all installed Plasma Desktop Styles (controls launcher/panel colors)."""
+        """列出已安装的 Plasma 桌面面板与任务栏样式。"""
         style_dirs = [
             Path("/usr/share/plasma/desktoptheme"),
             self.data_dir / "plasma" / "desktoptheme",
@@ -233,57 +231,47 @@ class ThemeController:
         return sorted(list(found))
 
     def get_current_plasma_style(self) -> str:
-        """Returns active Plasma Desktop Style name."""
+        """获取当前生效的 Plasma 桌面面板样式。"""
         return self.kwin.read_config("plasmarc", "Theme", "name", default="default")
 
     def apply_plasma_style(self, style_name: str) -> tuple[bool, str]:
-        """Sets the active Plasma Desktop Style in plasmarc and reloads."""
+        """设置 plasmarc 中的桌面面板样式。"""
         if self.dry_run:
-            return True, f"[Dry-run] Would set Plasma Desktop Style: {style_name}"
+            return True, f"[演练模拟] 将设置 Plasma 桌面面板样式: {style_name}"
         ok = self.kwin.write_config("plasmarc", "Theme", "name", style_name)
         if ok:
             self.kwin.reconfigure_kwin()
-            return True, f"Plasma Desktop Style set to '{style_name}'."
-        return False, f"Failed to set Plasma style '{style_name}'."
+            return True, f"Plasma 桌面面板样式已设置为 '{style_name}'。"
+        return False, f"设置 Plasma 样式 '{style_name}' 失败。"
 
-    # ==================== 6. Application Widget Styles (Qt6) ====================
+    # ==================== 6. Qt6 控件渲染引擎 (Widget Styles) ====================
 
     def list_widget_styles(self) -> list[str]:
-        """Returns all available Qt widget style engines (e.g. Breeze, kvantum, kvantum-dark, Fusion, Oxygen)."""
+        """列出系统中可用的 Qt 控件渲染引擎 (Breeze, kvantum, Fusion 等)。"""
         styles = {"Breeze", "Fusion", "Oxygen"}
-        # Check Kvantum
-        if shutil.which("kvantummanager") is not None or Path("/usr/lib/qt6/plugins/styles/libkvantum.so").exists() or Path("/usr/lib/qt/plugins/styles/libkvantum.so").exists():
+        if shutil.which("kvantummanager") or (Path("/usr/lib/qt6/plugins/styles/libkvantum.so").exists()):
             styles.add("kvantum")
             styles.add("kvantum-dark")
-        # Check Lightly
-        if Path("/usr/lib/qt6/plugins/styles/liblightly.so").exists():
-            styles.add("Lightly")
-        # Check Qt6 plugin dir
-        qt6_plugin_dir = Path("/usr/lib/qt6/plugins/styles")
-        if qt6_plugin_dir.exists():
-            for p in qt6_plugin_dir.glob("lib*.so"):
-                stem = p.stem.removeprefix("lib")
-                styles.add(stem.capitalize())
         return sorted(list(styles))
 
     def get_current_widget_style(self) -> str:
-        """Returns active Qt widget style."""
+        """获取当前生效的 Qt 控件渲染引擎。"""
         return self.kwin.read_config("kdeglobals", "KDE", "widgetStyle", default="Breeze")
 
     def apply_widget_style(self, style_name: str) -> tuple[bool, str]:
-        """Sets the active Qt widget style in kdeglobals."""
+        """设置 kdeglobals 中的 Qt 控件样式引擎。"""
         if self.dry_run:
-            return True, f"[Dry-run] Would set Qt widget style: {style_name}"
+            return True, f"[演练模拟] 将设置 Qt 控件样式引擎: {style_name}"
         ok = self.kwin.write_config("kdeglobals", "KDE", "widgetStyle", style_name)
         if ok:
             self.kwin.reconfigure_kwin()
-            return True, f"Application widget style set to '{style_name}'."
-        return False, f"Failed to set widget style '{style_name}'."
+            return True, f"Qt 控件样式引擎已成功设置为 '{style_name}'。"
+        return False, f"设置控件引擎 '{style_name}' 失败。"
 
-    # ==================== 7. Kvantum SVG Theme Manager ====================
+    # ==================== 7. Kvantum SVG 主题 ====================
 
     def list_kvantum_themes(self) -> list[str]:
-        """Returns all installed Kvantum themes."""
+        """列出已安装的 Kvantum SVG 主题。"""
         kv_dirs = [
             Path("/usr/share/Kvantum"),
             self.config_dir / "Kvantum",
@@ -293,290 +281,127 @@ class ThemeController:
         for d in kv_dirs:
             if d.exists():
                 for sub in d.iterdir():
-                    if sub.is_dir() and (sub / f"{sub.name}.kvconfig").exists():
+                    if sub.is_dir() and ((sub / f"{sub.name}.kvconfig").exists() or (sub / f"{sub.name}.svg").exists()):
                         found.add(sub.name)
         return sorted(list(found))
 
     def get_current_kvantum_theme(self) -> str:
-        """Returns currently active Kvantum theme."""
+        """获取当前配置的 Kvantum SVG 主题名称。"""
         kv_config = self.config_dir / "Kvantum" / "kvantum.kvconfig"
         if kv_config.exists():
-            content = kv_config.read_text(encoding="utf-8", errors="ignore")
-            m = re.search(r"theme\s*=\s*(.+)", content)
-            if m:
-                return m.group(1).strip()
+            for line in kv_config.read_text(encoding="utf-8", errors="ignore").splitlines():
+                if line.strip().startswith("theme="):
+                    return line.strip().split("=", 1)[1].strip()
         return "Default"
 
     def apply_kvantum_theme(self, theme_name: str) -> tuple[bool, str]:
-        """Applies a Kvantum theme via kvantummanager or writing kvantum.kvconfig."""
+        """切换 Kvantum SVG 主题配置。"""
         if self.dry_run:
-            return True, f"[Dry-run] Would apply Kvantum theme: {theme_name}"
-
-        kv_manager = shutil.which("kvantummanager")
-        if kv_manager:
-            try:
-                res = subprocess.run([kv_manager, "--set", theme_name], capture_output=True, text=True, check=False)
-                if res.returncode == 0:
-                    return True, f"Kvantum theme set to '{theme_name}'."
-            except Exception:
-                pass
-
-        # Direct file fallback
+            return True, f"[演练模拟] 将应用 Kvantum 主题: {theme_name}"
         kv_dir = self.config_dir / "Kvantum"
         kv_dir.mkdir(parents=True, exist_ok=True)
         kv_config = kv_dir / "kvantum.kvconfig"
+        content = f"[General]\ntheme={theme_name}\n"
         try:
-            if kv_config.exists():
-                content = kv_config.read_text(encoding="utf-8")
-                if re.search(r"theme\s*=", content):
-                    content = re.sub(r"theme\s*=.*", f"theme={theme_name}", content)
-                else:
-                    content += f"\n[General]\ntheme={theme_name}\n"
-                kv_config.write_text(content, encoding="utf-8")
-            else:
-                kv_config.write_text(f"[General]\ntheme={theme_name}\n", encoding="utf-8")
-            return True, f"Kvantum theme set to '{theme_name}'."
+            kv_config.write_text(content, encoding="utf-8")
+            self.kwin.reconfigure_kwin()
+            return True, f"Kvantum SVG 主题已设置为 '{theme_name}'。"
         except Exception as e:
-            return False, f"Failed to set Kvantum theme: {e}"
+            return False, f"写入 Kvantum 配置失败: {e}"
 
-    # ==================== 8. Window Decorations & Klassy ====================
+    # ==================== 8. 窗口装饰引擎 (Window Decorations) ====================
 
     def list_window_decorations(self) -> list[str]:
-        """Returns available window decoration libraries."""
-        libs = ["org.kde.breeze"]
-        if shutil.which("klassy-settings") is not None or Path("/usr/lib/qt6/plugins/org.kde.kdecoration2/klassy.so").exists():
-            libs.append("klassy")
-        if Path("/usr/lib/qt6/plugins/org.kde.kdecoration2/kwin-sierrabreezeenhanced.so").exists():
-            libs.append("sierrabreezeenhanced")
-        if (Path("/usr/share/aurorae/themes").exists() or (self.data_dir / "aurorae" / "themes").exists()):
-            libs.append("org.kde.kwin.aurorae.v2")
-        return libs
+        """列出可用的窗口装饰引擎（如 Breeze 原生 C++ 亚像素渲染、Klassy 等）。"""
+        decos = ["org.kde.breeze"]
+        if shutil.which("klassy-settings") or Path("/usr/lib/qt6/plugins/org.kde.kdecoration2/klassy.so").exists():
+            decos.append("klassy")
+        if Path("/usr/lib/qt6/plugins/org.kde.kdecoration2/org.kde.kwin.aurorae.so").exists():
+            decos.append("org.kde.kwin.aurorae.v2")
+        return decos
 
     def get_window_decoration(self) -> tuple[str, str]:
-        """Returns (library, theme) for window decoration."""
+        """获取当前激活的窗口装饰库与主题。"""
         lib = self.kwin.read_config("kwinrc", "org.kde.kdecoration2", "library", default="org.kde.breeze")
         theme = self.kwin.read_config("kwinrc", "org.kde.kdecoration2", "theme", default="")
         return lib, theme
 
-    def set_window_decoration(
-        self,
-        library: str,
-        theme: Optional[str] = None,
-        buttons_left: Optional[str] = None,
-        buttons_right: Optional[str] = None,
-        border_size: Optional[str] = None,
-    ) -> tuple[bool, str]:
-        """Sets window decoration library, theme, and optional button layout / border size."""
+    def set_window_decoration(self, library: str, theme: Optional[str] = None) -> tuple[bool, str]:
+        """切换窗口装饰引擎并在需要时配置特定主题。"""
         if self.dry_run:
-            return True, f"[Dry-run] Would set window decoration: {library} (theme: {theme})"
-
-        self.kwin.write_config("kwinrc", "org.kde.kdecoration2", "library", library)
-        if theme is not None:
+            return True, f"[演练模拟] 将设置窗口装饰: {library} (主题: {theme or '默认'})"
+        ok1 = self.kwin.write_config("kwinrc", "org.kde.kdecoration2", "library", library)
+        if theme:
             self.kwin.write_config("kwinrc", "org.kde.kdecoration2", "theme", theme)
-        if buttons_left is not None:
-            self.kwin.write_config("kwinrc", "org.kde.kdecoration2", "ButtonsOnLeft", buttons_left)
-        if buttons_right is not None:
-            self.kwin.write_config("kwinrc", "org.kde.kdecoration2", "ButtonsOnRight", buttons_right)
-        if border_size is not None:
-            self.kwin.write_config("kwinrc", "org.kde.kdecoration2", "BorderSize", border_size)
-
         self.kwin.reconfigure_kwin()
-        return True, f"Window decoration set to '{library}'."
+        if ok1:
+            return True, f"窗口装饰已成功设置为 '{library}'。"
+        return False, "设置窗口装饰失败。"
 
-    def configure_klassy(
-        self,
-        corner_radius: int = 10,
-        blur: bool = True,
-        opacity: int = 100,
-    ) -> tuple[bool, str]:
-        """Configures Klassy window decoration settings if Klassy is used."""
+    # ==================== 9. GTK 3/4 样式同步 ====================
+
+    def sync_gtk_theme(self, gtk_theme: Optional[str] = None, dark_mode: bool = True) -> tuple[bool, str]:
+        """同步 GTK 3/4 主题、暗色模式偏好与图标指针至 KDE 一致。"""
         if self.dry_run:
-            return True, f"[Dry-run] Would configure Klassy (radius: {corner_radius}, blur: {blur})"
+            return True, f"[演练模拟] 将同步 GTK 主题为: {gtk_theme or 'Breeze'} (暗色: {dark_mode})"
 
-        klassy_dir = self.config_dir / "klassy"
-        klassy_dir.mkdir(parents=True, exist_ok=True)
-        klassyrc = klassy_dir / "klassyrc"
+        cur_icon = self.get_current_icon_theme()
+        cur_cursor = self.get_current_cursor_theme()
+        chosen_gtk = gtk_theme or ("Breeze-Dark" if dark_mode else "Breeze")
+
+        # 写入 ~/.config/gtk-3.0/settings.ini
+        gtk3_dir = self.config_dir / "gtk-3.0"
+        gtk3_dir.mkdir(parents=True, exist_ok=True)
+        gtk3_file = gtk3_dir / "settings.ini"
+        gtk3_content = f"""[Settings]
+gtk-theme-name={chosen_gtk}
+gtk-icon-theme-name={cur_icon}
+gtk-cursor-theme-name={cur_cursor}
+gtk-application-prefer-dark-theme={1 if dark_mode else 0}
+"""
+        # 写入 ~/.config/gtk-4.0/settings.ini
+        gtk4_dir = self.config_dir / "gtk-4.0"
+        gtk4_dir.mkdir(parents=True, exist_ok=True)
+        gtk4_file = gtk4_dir / "settings.ini"
 
         try:
-            # Write or update klassy settings
-            self.kwin.write_config("klassyrc", "WindowDeco", "CornerRadius", str(corner_radius))
-            self.kwin.write_config("klassyrc", "WindowDeco", "BackgroundBlur", "true" if blur else "false")
-            self.kwin.write_config("klassyrc", "WindowDeco", "Opacity", str(opacity))
-            self.kwin.reconfigure_kwin()
-            return True, f"Klassy configured (CornerRadius: {corner_radius}px, Blur: {blur})."
+            gtk3_file.write_text(gtk3_content, encoding="utf-8")
+            gtk4_file.write_text(gtk3_content, encoding="utf-8")
+            return True, f"GTK 3/4 样式已成功同步至 '{chosen_gtk}'。"
         except Exception as e:
-            return False, f"Failed to configure Klassy: {e}"
+            return False, f"写入 GTK 配置文件失败: {e}"
 
-    # ==================== 9. Font Settings ====================
+    # ==================== 10. 系统字体配置 ====================
 
     def get_fonts(self) -> dict[str, str]:
-        """Returns KDE system font configuration from kdeglobals."""
-        fonts = {
-            "General": self.kwin.read_config("kdeglobals", "General", "font", default="Noto Sans,10,-1,5,50,0,0,0,0,0"),
-            "Fixed": self.kwin.read_config("kdeglobals", "General", "fixed", default="Hack,10,-1,5,50,0,0,0,0,0"),
-            "SmallestReadable": self.kwin.read_config("kdeglobals", "General", "smallestReadableFont", default="Noto Sans,8,-1,5,50,0,0,0,0,0"),
-            "ToolBar": self.kwin.read_config("kdeglobals", "General", "toolBarFont", default="Noto Sans,10,-1,5,50,0,0,0,0,0"),
-            "Menu": self.kwin.read_config("kdeglobals", "General", "menuFont", default="Noto Sans,10,-1,5,50,0,0,0,0,0"),
-            "WindowTitle": self.kwin.read_config("kdeglobals", "WM", "activeFont", default="Noto Sans,10,-1,5,50,0,0,0,0,0"),
+        """获取当前配置的 KDE 系统字体字典。"""
+        return {
+            "general": self.kwin.read_config("kdeglobals", "General", "font", default=""),
+            "fixed": self.kwin.read_config("kdeglobals", "General", "fixed", default=""),
+            "windowtitle": self.kwin.read_config("kdeglobals", "WM", "activeFont", default=""),
+            "menu": self.kwin.read_config("kdeglobals", "General", "menuFont", default=""),
+            "toolbar": self.kwin.read_config("kdeglobals", "General", "toolBarFont", default=""),
+            "small": self.kwin.read_config("kdeglobals", "General", "smallestReadableFont", default=""),
         }
-        return fonts
 
     def set_font(self, category: str, font_spec: str) -> tuple[bool, str]:
-        """Sets a font specification for a given category (General, Fixed, Menu, ToolBar, WindowTitle)."""
+        """设置指定分类的系统字体规格。"""
         if self.dry_run:
-            return True, f"[Dry-run] Would set font for '{category}': {font_spec}"
-
+            return True, f"[演练模拟] 将设置字体 [{category}] 为 '{font_spec}'"
         cat_map = {
             "general": ("General", "font"),
             "fixed": ("General", "fixed"),
-            "small": ("General", "smallestReadableFont"),
-            "toolbar": ("General", "toolBarFont"),
-            "menu": ("General", "menuFont"),
             "windowtitle": ("WM", "activeFont"),
+            "menu": ("General", "menuFont"),
+            "toolbar": ("General", "toolBarFont"),
+            "small": ("General", "smallestReadableFont"),
         }
-        target = cat_map.get(category.lower())
-        if not target:
-            return False, f"Unknown font category '{category}'. Choose from: {list(cat_map.keys())}"
+        if category.lower() not in cat_map:
+            return False, f"未知的字体分类: {category}"
 
-        group, key = target
-        ok = self.kwin.write_config("kdeglobals", group, key, font_spec)
+        grp, key = cat_map[category.lower()]
+        ok = self.kwin.write_config("kdeglobals", grp, key, font_spec)
         if ok:
             self.kwin.reconfigure_kwin()
-            return True, f"Font for '{category}' updated."
-        return False, f"Failed to set font for '{category}'."
-
-    # ==================== 10. Splash Screen ====================
-
-    def list_splash_themes(self) -> list[str]:
-        """Returns installed KDE splash screen themes."""
-        dirs = [
-            Path("/usr/share/plasma/look-and-feel"),
-            self.data_dir / "plasma" / "look-and-feel",
-        ]
-        found = set()
-        for d in dirs:
-            if d.exists():
-                for sub in d.iterdir():
-                    if sub.is_dir() and (sub / "contents" / "splash").exists():
-                        found.add(sub.name)
-        return sorted(list(found))
-
-    def get_current_splash(self) -> tuple[str, str]:
-        """Returns (theme, engine) for splash screen."""
-        theme = self.kwin.read_config("ksplashrc", "KSplash", "Theme", default="org.kde.breeze.desktop")
-        engine = self.kwin.read_config("ksplashrc", "KSplash", "Engine", default="KSplashQML")
-        return theme, engine
-
-    def apply_splash_theme(self, theme_name: str, engine: str = "KSplashQML") -> tuple[bool, str]:
-        """Sets active splash screen in ksplashrc."""
-        if self.dry_run:
-            return True, f"[Dry-run] Would set Splash Screen: {theme_name} (Engine: {engine})"
-        self.kwin.write_config("ksplashrc", "KSplash", "Theme", theme_name)
-        self.kwin.write_config("ksplashrc", "KSplash", "Engine", engine)
-        return True, f"Splash screen set to '{theme_name}'."
-
-    # ==================== 11. GTK Theme & Dark Preference Sync ====================
-
-    def get_gtk_theme(self) -> str:
-        """Returns active GTK 3/4 theme name."""
-        gtk3_ini = self.config_dir / "gtk-3.0" / "settings.ini"
-        if gtk3_ini.exists():
-            content = gtk3_ini.read_text(encoding="utf-8", errors="ignore")
-            m = re.search(r"gtk-theme-name\s*=\s*(.+)", content)
-            if m:
-                return m.group(1).strip()
-        return "Breeze"
-
-    def sync_gtk_theme(
-        self,
-        gtk_theme: Optional[str] = None,
-        dark_mode: Optional[bool] = None,
-        icon_theme: Optional[str] = None,
-        cursor_theme: Optional[str] = None,
-    ) -> tuple[bool, str]:
-        """Synchronizes GTK 3.0 / 4.0 settings and GNOME interface preferences with KDE."""
-        if self.dry_run:
-            return True, f"[Dry-run] Would sync GTK theme: {gtk_theme} (Dark: {dark_mode})"
-
-        theme_to_set = gtk_theme or ("Breeze-Dark" if dark_mode else "Breeze")
-        icons_to_set = icon_theme or self.get_current_icon_theme()
-        cursors_to_set = cursor_theme or self.get_current_cursor_theme()
-
-        # Update GTK 3.0
-        for ver in ["gtk-3.0", "gtk-4.0"]:
-            d = self.config_dir / ver
-            d.mkdir(parents=True, exist_ok=True)
-            ini_file = d / "settings.ini"
-            content = f"""[Settings]
-gtk-theme-name={theme_to_set}
-gtk-icon-theme-name={icons_to_set}
-gtk-cursor-theme-name={cursors_to_set}
-gtk-application-prefer-dark-theme={'1' if dark_mode else '0'}
-"""
-            try:
-                ini_file.write_text(content, encoding="utf-8")
-            except Exception as e:
-                return False, f"Failed writing {ver} settings: {e}"
-
-        # Update GSettings via gsettings if present
-        gsettings_bin = shutil.which("gsettings")
-        if gsettings_bin:
-            try:
-                subprocess.run([gsettings_bin, "set", "org.gnome.desktop.interface", "gtk-theme", theme_to_set], check=False, capture_output=True)
-                color_scheme = "prefer-dark" if dark_mode else "prefer-light"
-                subprocess.run([gsettings_bin, "set", "org.gnome.desktop.interface", "color-scheme", color_scheme], check=False, capture_output=True)
-            except Exception:
-                pass
-
-        return True, f"GTK 3/4 theme synchronized to '{theme_to_set}'."
-
-    # ==================== 12. Active Palette Extractor ====================
-
-    def get_active_palette_summary(self) -> dict[str, str]:
-        """Returns summary of current active color values from kdeglobals."""
-        kdeglobals = self.config_dir / "kdeglobals"
-        summary = {
-            "ColorScheme": self.get_current_colorscheme(),
-            "WindowBackground": "#2E3440",
-            "WindowForeground": "#ECEFF4",
-            "SelectionBackground": "#5E81AC",
-            "SelectionForeground": "#ECEFF4",
-            "ButtonBackground": "#3B4252",
-        }
-        if kdeglobals.exists():
-            content = kdeglobals.read_text(encoding="utf-8", errors="ignore")
-            from krice.terminal_ctl import parse_kde_rgb
-            m = re.search(r"\[Colors:Window\][^\[]*?BackgroundNormal=([0-9, ]+)", content)
-            if m:
-                summary["WindowBackground"] = parse_kde_rgb(m.group(1), summary["WindowBackground"])
-            m = re.search(r"\[Colors:Window\][^\[]*?ForegroundNormal=([0-9, ]+)", content)
-            if m:
-                summary["WindowForeground"] = parse_kde_rgb(m.group(1), summary["WindowForeground"])
-            m = re.search(r"\[Colors:Selection\][^\[]*?BackgroundNormal=([0-9, ]+)", content)
-            if m:
-                summary["SelectionBackground"] = parse_kde_rgb(m.group(1), summary["SelectionBackground"])
-            m = re.search(r"\[Colors:Selection\][^\[]*?ForegroundNormal=([0-9, ]+)", content)
-            if m:
-                summary["SelectionForeground"] = parse_kde_rgb(m.group(1), summary["SelectionForeground"])
-            m = re.search(r"\[Colors:Button\][^\[]*?BackgroundNormal=([0-9, ]+)", content)
-            if m:
-                summary["ButtonBackground"] = parse_kde_rgb(m.group(1), summary["ButtonBackground"])
-        return summary
-
-    # ==================== 13. Wallpaper ====================
-
-    def apply_wallpaper(self, wallpaper_path: Path) -> tuple[bool, str]:
-        """Applies a desktop wallpaper image using plasma-apply-wallpaperimage."""
-        if not wallpaper_path.exists():
-            return False, f"Wallpaper file not found: {wallpaper_path}"
-        if self.dry_run:
-            return True, f"[Dry-run] Would set wallpaper: {wallpaper_path}"
-        if not self.apply_wallpaper_bin:
-            return False, "plasma-apply-wallpaperimage command not found."
-        try:
-            res = subprocess.run([self.apply_wallpaper_bin, str(wallpaper_path.resolve())], capture_output=True, text=True, check=False)
-            if res.returncode == 0:
-                return True, f"Wallpaper updated to '{wallpaper_path.name}'."
-            return False, res.stderr.strip() or res.stdout.strip()
-        except Exception as e:
-            return False, f"Failed to set wallpaper: {e}"
+            return True, f"字体分类 [{category}] 已成功更新为 '{font_spec}'。"
+        return False, f"更新字体分类 [{category}] 失败。"

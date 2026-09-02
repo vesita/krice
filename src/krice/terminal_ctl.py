@@ -1,4 +1,4 @@
-"""Terminal & Shell Prompt Theming Controller for krice."""
+"""多终端模拟器与 Shell 提示符调色板控制器（支持 Kitty、Alacritty、Konsole、Ghostty、Foot、WezTerm、Zellij、Starship、Fastfetch）。"""
 
 from __future__ import annotations
 
@@ -7,38 +7,43 @@ import re
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from krice.presets.prompt_presets import generate_fastfetch_config, generate_starship_config
-from krice.presets.terminal_palettes import TERMINAL_PALETTES, TerminalPalette
+from krice.presets.terminal_palettes import CACHY_NORD, CYAN_LIGHT, NORD_LIGHT, TERMINAL_PALETTES, TerminalPalette
 
 
-def hex_to_rgb(hex_str: str) -> tuple[int, int, int]:
-    """Converts #RRGGBB to (r, g, b)."""
-    hex_str = hex_str.lstrip("#")
-    if len(hex_str) == 3:
-        hex_str = "".join([c * 2 for c in hex_str])
-    return int(hex_str[0:2], 16), int(hex_str[2:4], 16), int(hex_str[4:6], 16)
+def hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
+    """将十六进制颜色值 (#RRGGBB 或 #RGB) 转换为 (R, G, B) 整数元组。"""
+    hex_clean = hex_color.lstrip("#")
+    if len(hex_clean) == 3:
+        hex_clean = "".join([c * 2 for c in hex_clean])
+    if len(hex_clean) != 6:
+        return (0, 0, 0)
+    return (int(hex_clean[0:2], 16), int(hex_clean[2:4], 16), int(hex_clean[4:6], 16))
 
 
 def rgb_to_hex(r: int, g: int, b: int) -> str:
-    """Converts (r, g, b) to #RRGGBB."""
-    return f"#{max(0, min(255, r)):02X}{max(0, min(255, g)):02X}{max(0, min(255, b)):02X}"
+    """将 (R, G, B) 整数转换为标准的 #RRGGBB 十六进制大写字符串。"""
+    return f"#{r:02X}{g:02X}{b:02X}"
 
 
-def parse_kde_rgb(val: str, default_hex: str = "#000000") -> str:
-    """Parses KDE 'r,g,b' string to #RRGGBB."""
-    try:
-        parts = [int(p.strip()) for p in val.split(",") if p.strip()]
-        if len(parts) >= 3:
-            return rgb_to_hex(parts[0], parts[1], parts[2])
-    except Exception:
-        pass
+def parse_kde_rgb(kde_str: str, default_hex: str = "#000000") -> str:
+    """解析 KDE 配置文件中的 'R,G,B' 格式颜色字符串为十六进制 #RRGGBB 格式。"""
+    parts = kde_str.strip().split(",")
+    if len(parts) >= 3:
+        try:
+            r = max(0, min(255, int(parts[0].strip())))
+            g = max(0, min(255, int(parts[1].strip())))
+            b = max(0, min(255, int(parts[2].strip())))
+            return rgb_to_hex(r, g, b)
+        except ValueError:
+            pass
     return default_hex
 
 
 class TerminalController:
-    """Manages color themes and synchronization for terminal emulators and CLI prompt tools."""
+    """管理并同步终端模拟器与 Shell 提示符工具的色彩、字体与视觉布局。"""
 
     def __init__(self, dry_run: bool = False, home_dir: Optional[Path] = None) -> None:
         self.dry_run = dry_run
@@ -46,151 +51,142 @@ class TerminalController:
         self.config_dir = Path(os.environ.get("XDG_CONFIG_HOME", str(self.home / ".config")))
         self.data_dir = Path(os.environ.get("XDG_DATA_HOME", str(self.home / ".local" / "share")))
 
-    # --- Palettes Discovery ---
-
-    def list_palettes(self) -> list[str]:
-        """Returns list of built-in terminal palette names."""
-        return sorted(list(TERMINAL_PALETTES.keys()))
-
     def get_palette(self, name: str) -> Optional[TerminalPalette]:
-        """Retrieves a palette by name."""
-        return TERMINAL_PALETTES.get(name)
+        """根据名称获取预设的终端调色板。"""
+        return TERMINAL_PALETTES.get(name.lower())
 
-    # --- Active KDE Color Scheme -> Terminal Palette Synthesis ---
-
-    def extract_palette_from_kde(self) -> TerminalPalette:
-        """Extracts colors from current kdeglobals / KDE color scheme and synthesizes a TerminalPalette."""
-        kdeglobals = self.config_dir / "kdeglobals"
-        bg = "#2E3440"
-        fg = "#ECEFF4"
-        sel_bg = "#5E81AC"
-        sel_fg = "#ECEFF4"
-        btn_bg = "#3B4252"
-        btn_fg = "#D8DEE9"
-
-        if kdeglobals.exists():
-            content = kdeglobals.read_text(encoding="utf-8", errors="ignore")
-            # Parse [Colors:Window] BackgroundNormal
-            m_bg = re.search(r"\[Colors:Window\][^\[]*?BackgroundNormal=([0-9, ]+)", content)
-            if m_bg:
-                bg = parse_kde_rgb(m_bg.group(1), bg)
-
-            m_fg = re.search(r"\[Colors:Window\][^\[]*?ForegroundNormal=([0-9, ]+)", content)
-            if m_fg:
-                fg = parse_kde_rgb(m_fg.group(1), fg)
-
-            m_sel_bg = re.search(r"\[Colors:Selection\][^\[]*?BackgroundNormal=([0-9, ]+)", content)
-            if m_sel_bg:
-                sel_bg = parse_kde_rgb(m_sel_bg.group(1), sel_bg)
-
-            m_sel_fg = re.search(r"\[Colors:Selection\][^\[]*?ForegroundNormal=([0-9, ]+)", content)
-            if m_sel_fg:
-                sel_fg = parse_kde_rgb(m_sel_fg.group(1), sel_fg)
-
-            m_btn_bg = re.search(r"\[Colors:Button\][^\[]*?BackgroundNormal=([0-9, ]+)", content)
-            if m_btn_bg:
-                btn_bg = parse_kde_rgb(m_btn_bg.group(1), btn_bg)
-
-            m_btn_fg = re.search(r"\[Colors:Button\][^\[]*?ForegroundNormal=([0-9, ]+)", content)
-            if m_btn_fg:
-                btn_fg = parse_kde_rgb(m_btn_fg.group(1), btn_fg)
-
-        # Determine light or dark
-        r, g, b = hex_to_rgb(bg)
-        luminance = (0.299 * r + 0.587 * g + 0.114 * b)
-        is_dark = luminance < 128
-
-        # Synthesize harmonious ANSI colors based on accent and background
-        if is_dark:
-            red = "#BF616A"
-            green = "#A3BE8C"
-            yellow = "#EBCB8B"
-            blue = sel_bg
-            magenta = "#B48EAD"
-            cyan = "#88C0D0"
-            black = btn_bg
-            white = fg
-            bright_black = "#555E70"
-            bright_red = "#D08770"
-            bright_green = "#8FBCBB"
-            bright_yellow = "#EBCB8B"
-            bright_blue = sel_bg
-            bright_magenta = "#B48EAD"
-            bright_cyan = "#8FBCBB"
-            bright_white = "#FFFFFF"
-        else:
-            red = "#BF616A"
-            green = "#8FBCBB"
-            yellow = "#D08770"
-            blue = sel_bg
-            magenta = "#B48EAD"
-            cyan = "#88C0D0"
-            black = fg
-            white = btn_bg
-            bright_black = "#4C566A"
-            bright_red = "#A9555E"
-            bright_green = "#7EABA0"
-            bright_yellow = "#C27A63"
-            bright_blue = sel_bg
-            bright_magenta = "#A07C9A"
-            bright_cyan = "#6E9FA7"
-            bright_white = bg
-
-        return TerminalPalette(
-            name="kde-extracted",
-            display_name="Extracted from KDE Theme",
-            background=bg,
-            foreground=fg,
-            dim_foreground=bright_black,
-            bright_foreground=bright_white,
-            cursor=sel_bg,
-            cursor_text=bg,
-            selection_bg=sel_bg,
-            selection_fg=sel_fg,
-            black=black,
-            red=red,
-            green=green,
-            yellow=yellow,
-            blue=blue,
-            magenta=magenta,
-            cyan=cyan,
-            white=white,
-            bright_black=bright_black,
-            bright_red=bright_red,
-            bright_green=bright_green,
-            bright_yellow=bright_yellow,
-            bright_blue=bright_blue,
-            bright_magenta=bright_magenta,
-            bright_cyan=bright_cyan,
-            bright_white=bright_white,
-            is_dark=is_dark,
-        )
-
-    # --- Terminal Detection ---
+    def list_palettes(self) -> dict[str, TerminalPalette]:
+        """列出所有已注册的终端调色板。"""
+        return TERMINAL_PALETTES
 
     def detect_installed_terminals(self) -> dict[str, bool]:
-        """Detects which terminal emulators and CLI tools are installed or configured."""
+        """检测当前系统已安装或已配置的终端模拟器与命令行工具。"""
         return {
-            "konsole": shutil.which("konsole") is not None or (self.config_dir / "konsolerc").exists(),
+            "konsole": shutil.which("konsole") is not None or (self.data_dir / "konsole").exists(),
             "alacritty": shutil.which("alacritty") is not None or (self.config_dir / "alacritty").exists(),
             "kitty": shutil.which("kitty") is not None or (self.config_dir / "kitty").exists(),
             "ghostty": shutil.which("ghostty") is not None or (self.config_dir / "ghostty").exists(),
             "foot": shutil.which("foot") is not None or (self.config_dir / "foot").exists(),
             "wezterm": shutil.which("wezterm") is not None or (self.config_dir / "wezterm").exists(),
             "zellij": shutil.which("zellij") is not None or (self.config_dir / "zellij").exists(),
-            "starship": shutil.which("starship") is not None or (self.home / ".local" / "bin" / "starship").exists() or (self.config_dir / "starship.toml").exists(),
+            "starship": shutil.which("starship") is not None or (self.config_dir / "starship.toml").exists(),
             "fastfetch": shutil.which("fastfetch") is not None or (self.config_dir / "fastfetch").exists(),
         }
 
+    # ==================== 从当前 KDE 配色中智能提取调色板 ====================
+
+    def extract_palette_from_kde(self) -> TerminalPalette:
+        """从当前系统的 ~/.config/kdeglobals 中智能提取活动配色方案，生成高对比度 16 色 ANSI 调色板。"""
+        kdeglobals = self.config_dir / "kdeglobals"
+        bg = "#F0F6F6"
+        fg = "#1A282D"
+        sel_bg = "#C8E6E6"
+        sel_fg = "#0F3D39"
+        accent = "#0891B2"
+
+        if kdeglobals.exists():
+            content = kdeglobals.read_text(encoding="utf-8", errors="ignore")
+            # 提取 [Colors:View] 或 [Colors:Window]
+            m_bg = re.search(r"\[Colors:View\][^\[]*?BackgroundNormal=([0-9,]+)", content)
+            if not m_bg:
+                m_bg = re.search(r"\[Colors:Window\][^\[]*?BackgroundNormal=([0-9,]+)", content)
+            if m_bg:
+                bg = parse_kde_rgb(m_bg.group(1), bg)
+
+            m_fg = re.search(r"\[Colors:View\][^\[]*?ForegroundNormal=([0-9,]+)", content)
+            if not m_fg:
+                m_fg = re.search(r"\[Colors:Window\][^\[]*?ForegroundNormal=([0-9,]+)", content)
+            if m_fg:
+                fg = parse_kde_rgb(m_fg.group(1), fg)
+
+            m_sel_bg = re.search(r"\[Colors:Selection\][^\[]*?BackgroundNormal=([0-9,]+)", content)
+            if m_sel_bg:
+                sel_bg = parse_kde_rgb(m_sel_bg.group(1), sel_bg)
+
+            m_sel_fg = re.search(r"\[Colors:Selection\][^\[]*?ForegroundNormal=([0-9,]+)", content)
+            if m_sel_fg:
+                sel_fg = parse_kde_rgb(m_sel_fg.group(1), sel_fg)
+
+            accent = sel_bg if sel_bg else ("#0891B2" if not is_dark else "#88C0D0")
+            m_accent = re.search(r"\[General\][^\[]*?AccentColor=([0-9,]+)", content)
+            if m_accent:
+                accent = parse_kde_rgb(m_accent.group(1), accent)
+        # 计算亮度以判断暗色/亮色模式
+        r, g, b = hex_to_rgb(bg)
+        brightness = (r * 299 + g * 587 + b * 114) / 1000
+        is_dark = brightness < 128
+
+        if not is_dark:
+            # 浅色模式调色板（青翠冰霜）
+            return TerminalPalette(
+                name="kde-extracted",
+                display_name="KDE Extracted (Cyan Ice Daylight / 冰青极光)",
+                background=bg,
+                foreground=fg,
+                dim_foreground="#52707A",
+                bright_foreground="#0B171B",
+                cursor=accent,
+                cursor_text="#FFFFFF",
+                selection_bg=sel_bg,
+                selection_fg=sel_fg,
+                black="#1A282D",
+                red="#E11D48",
+                green="#059669",
+                yellow="#D97706",
+                blue=accent,
+                magenta="#7C3AED",
+                cyan="#0D9488",
+                white="#E0EEEE",
+                bright_black="#5E7A85",
+                bright_red="#F43F5E",
+                bright_green="#10B981",
+                bright_yellow="#F59E0B",
+                bright_blue="#06B6D4",
+                bright_magenta="#8B5CF6",
+                bright_cyan="#14B8A6",
+                bright_white="#FFFFFF",
+                is_dark=False,
+            )
+        else:
+            # 暗色模式调色板
+            return TerminalPalette(
+                name="kde-extracted",
+                display_name="KDE Extracted Palette (Live Sync)",
+                background=bg,
+                foreground=fg,
+                dim_foreground="#7684A0",
+                bright_foreground="#FFFFFF",
+                cursor=accent,
+                cursor_text=bg,
+                selection_bg=sel_bg,
+                selection_fg=sel_fg,
+                black="#2E3440",
+                red="#BF616A",
+                green="#A3BE8C",
+                yellow="#EBCB8B",
+                blue=accent,
+                magenta="#B48EAD",
+                cyan="#88C0D0",
+                white="#E5E9F0",
+                bright_black="#7684A0",
+                bright_red="#D08770",
+                bright_green="#A3BE8C",
+                bright_yellow="#EBCB8B",
+                bright_blue="#81A1C1",
+                bright_magenta="#B48EAD",
+                bright_cyan="#8FD5E6",
+                bright_white="#ECEFF4",
+                is_dark=True,
+            )
+
     def get_system_monospace_font(self) -> tuple[str, float]:
-        """Reads active KDE monospace font family and size from kdeglobals."""
+        """从 kdeglobals 中读取当前 KDE 桌面配置的等宽字体名称与字号。"""
         kdeglobals = self.config_dir / "kdeglobals"
         if kdeglobals.exists():
             content = kdeglobals.read_text(encoding="utf-8", errors="ignore")
-            m = re.search(r"^fixed=([^,\n\r]+)", content, re.MULTILINE)
+            m = re.search(r"fixed=([^,\n]+)", content)
             if m:
                 font_name = m.group(1).strip()
-                # Extract point size
                 line = content[m.start():content.find("\n", m.start())]
                 parts = line.split(",")
                 size = 11.5
@@ -203,20 +199,31 @@ class TerminalController:
                         pass
                 if font_name:
                     return font_name, size
-        return "CodeNewRoman WenKai Mono", 11.5
-    # --- Terminal Applications Application Logic ---
+        return "MesloLGS Nerd Font", 11.5
 
-    # 1. Konsole (KDE Native)
-    def apply_konsole(self, palette: TerminalPalette) -> tuple[bool, str]:
-        """Applies theme to KDE Konsole by writing colorscheme and updating konsolerc / profiles."""
+    def _resolve_palette(self, palette_or_name: Union[str, TerminalPalette]) -> Optional[TerminalPalette]:
+        """智能解析调色板：接收名称字符串或 TerminalPalette 实例并返回对应对象。"""
+        if isinstance(palette_or_name, str):
+            return self.get_palette(palette_or_name)
+        return palette_or_name
+
+    # ==================== 各终端独立配置写入逻辑 ====================
+
+    # 1. Konsole (KDE 原生终端)
+    def apply_konsole(self, palette: Union[str, TerminalPalette]) -> tuple[bool, str]:
+        """应用配色方案至 KDE 原生 Konsole 终端。"""
+        pal = self._resolve_palette(palette)
+        if not pal:
+            return False, f"未知的调色板 '{palette}'"
+        palette = pal
+
         if self.dry_run:
-            return True, f"[Dry-run] Would apply Konsole color scheme: krice-{palette.name}"
+            return True, f"[演练模拟] 将为 Konsole 应用配色方案: krice-{palette.name}"
 
         scheme_dir = self.data_dir / "konsole"
         scheme_dir.mkdir(parents=True, exist_ok=True)
         scheme_file = scheme_dir / f"krice-{palette.name}.colorscheme"
 
-        # Convert hex to RGB for Konsole format
         def hex_rgb_str(hex_val: str) -> str:
             r, g, b = hex_to_rgb(hex_val)
             return f"{r},{g},{b}"
@@ -226,95 +233,49 @@ class TerminalController:
             f"Description=krice {palette.display_name}",
             "Blur=true",
             "Opacity=0.94",
-            "",
-            "[Background]",
-            f"Color={hex_rgb_str(palette.background)}",
-            "",
-            "[Foreground]",
-            f"Color={hex_rgb_str(palette.foreground)}",
-            "",
-            "[BackgroundIntense]",
-            f"Color={hex_rgb_str(palette.background)}",
-            "",
-            "[ForegroundIntense]",
-            f"Color={hex_rgb_str(palette.bright_foreground)}",
-            "",
-            "[Color0]",
-            f"Color={hex_rgb_str(palette.black)}",
-            "[Color1]",
-            f"Color={hex_rgb_str(palette.red)}",
-            "[Color2]",
-            f"Color={hex_rgb_str(palette.green)}",
-            "[Color3]",
-            f"Color={hex_rgb_str(palette.yellow)}",
-            "[Color4]",
-            f"Color={hex_rgb_str(palette.blue)}",
-            "[Color5]",
-            f"Color={hex_rgb_str(palette.magenta)}",
-            "[Color6]",
-            f"Color={hex_rgb_str(palette.cyan)}",
-            "[Color7]",
-            f"Color={hex_rgb_str(palette.white)}",
-            "[Color0Intense]",
-            f"Color={hex_rgb_str(palette.bright_black)}",
-            "[Color1Intense]",
-            f"Color={hex_rgb_str(palette.bright_red)}",
-            "[Color2Intense]",
-            f"Color={hex_rgb_str(palette.bright_green)}",
-            "[Color3Intense]",
-            f"Color={hex_rgb_str(palette.bright_yellow)}",
-            "[Color4Intense]",
-            f"Color={hex_rgb_str(palette.bright_blue)}",
-            "[Color5Intense]",
-            f"Color={hex_rgb_str(palette.bright_magenta)}",
-            "[Color6Intense]",
-            f"Color={hex_rgb_str(palette.bright_cyan)}",
-            "[Color7Intense]",
-            f"Color={hex_rgb_str(palette.bright_white)}",
-            "",
+            f"[Background]\nColor={hex_rgb_str(palette.background)}",
+            f"[BackgroundIntense]\nColor={hex_rgb_str(palette.background)}",
+            f"[Foreground]\nColor={hex_rgb_str(palette.foreground)}",
+            f"[ForegroundIntense]\nColor={hex_rgb_str(palette.bright_foreground or palette.foreground)}",
+            f"[Color0]\nColor={hex_rgb_str(palette.black)}",
+            f"[Color0Intense]\nColor={hex_rgb_str(palette.bright_black)}",
+            f"[Color1]\nColor={hex_rgb_str(palette.red)}",
+            f"[Color1Intense]\nColor={hex_rgb_str(palette.bright_red)}",
+            f"[Color2]\nColor={hex_rgb_str(palette.green)}",
+            f"[Color2Intense]\nColor={hex_rgb_str(palette.bright_green)}",
+            f"[Color3]\nColor={hex_rgb_str(palette.yellow)}",
+            f"[Color3Intense]\nColor={hex_rgb_str(palette.bright_yellow)}",
+            f"[Color4]\nColor={hex_rgb_str(palette.blue)}",
+            f"[Color4Intense]\nColor={hex_rgb_str(palette.bright_blue)}",
+            f"[Color5]\nColor={hex_rgb_str(palette.magenta)}",
+            f"[Color5Intense]\nColor={hex_rgb_str(palette.bright_magenta)}",
+            f"[Color6]\nColor={hex_rgb_str(palette.cyan)}",
+            f"[Color6Intense]\nColor={hex_rgb_str(palette.bright_cyan)}",
+            f"[Color7]\nColor={hex_rgb_str(palette.white)}",
+            f"[Color7Intense]\nColor={hex_rgb_str(palette.bright_white)}",
         ]
         try:
-            scheme_file.write_text("\n".join(lines), encoding="utf-8")
+            scheme_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+            # 确保 konsolerc 与默认 Profile 存在
+            self.config_dir.mkdir(parents=True, exist_ok=True)
+            konsolerc = self.config_dir / "konsolerc"
+            if not konsolerc.exists():
+                konsolerc.write_text("[Desktop Entry]\nDefaultProfile=krice.profile\n", encoding="utf-8")
         except Exception as e:
-            return False, f"Failed to write Konsole colorscheme: {e}"
+            return False, f"写入 Konsole 配色方案失败: {e}"
 
-        # Update ~/.config/konsolerc
-        konsolerc = self.config_dir / "konsolerc"
-        try:
-            if konsolerc.exists():
-                content = konsolerc.read_text(encoding="utf-8")
-                if "[UiSettings]" in content:
-                    content = re.sub(r"ColorScheme=.*", f"ColorScheme=krice-{palette.name}", content)
-                    if "ColorScheme=" not in content:
-                        content = content.replace("[UiSettings]", f"[UiSettings]\nColorScheme=krice-{palette.name}")
-                else:
-                    content += f"\n[UiSettings]\nColorScheme=krice-{palette.name}\n"
-                konsolerc.write_text(content, encoding="utf-8")
-            else:
-                konsolerc.parent.mkdir(parents=True, exist_ok=True)
-                konsolerc.write_text(f"[UiSettings]\nColorScheme=krice-{palette.name}\n", encoding="utf-8")
-        except Exception as e:
-            return False, f"Failed to update konsolerc: {e}"
-
-        # Update default profiles in ~/.local/share/konsole/*.profile
-        for prof in scheme_dir.glob("*.profile"):
-            try:
-                txt = prof.read_text(encoding="utf-8")
-                if "[Appearance]" in txt:
-                    txt = re.sub(r"ColorScheme=.*", f"ColorScheme=krice-{palette.name}", txt)
-                else:
-                    txt += f"\n[Appearance]\nColorScheme=krice-{palette.name}\n"
-                prof.write_text(txt, encoding="utf-8")
-            except Exception:
-                pass
-
-        return True, f"Konsole theme set to 'krice-{palette.name}'."
+        return True, f"Konsole 主题已成功设置为 'krice-{palette.name}'。"
 
     # 2. Alacritty
-    def apply_alacritty(self, palette: TerminalPalette) -> tuple[bool, str]:
-        """Applies theme to Alacritty by updating alacritty.toml [colors] section."""
+    def apply_alacritty(self, palette: Union[str, TerminalPalette]) -> tuple[bool, str]:
+        """应用配色方案至 Alacritty 终端 (alacritty.toml)。"""
+        pal = self._resolve_palette(palette)
+        if not pal:
+            return False, f"未知的调色板 '{palette}'"
+        palette = pal
+
         if self.dry_run:
-            return True, f"[Dry-run] Would apply Alacritty color theme: {palette.name}"
+            return True, f"[演练模拟] 将为 Alacritty 应用调色板: {palette.name}"
 
         alacritty_dir = self.config_dir / "alacritty"
         alacritty_dir.mkdir(parents=True, exist_ok=True)
@@ -329,30 +290,6 @@ bright_foreground = "{palette.bright_foreground}"
 [colors.cursor]
 text = "{palette.cursor_text}"
 cursor = "{palette.cursor}"
-
-[colors.vi_mode_cursor]
-text = "{palette.cursor_text}"
-cursor = "{palette.bright_red}"
-
-[colors.search.matches]
-foreground = "{palette.cursor_text}"
-background = "{palette.blue}"
-
-[colors.search.focused_match]
-foreground = "{palette.cursor_text}"
-background = "{palette.cyan}"
-
-[colors.footer_bar]
-background = "{palette.selection_bg}"
-foreground = "{palette.foreground}"
-
-[colors.hints.start]
-foreground = "{palette.cursor_text}"
-background = "{palette.yellow}"
-
-[colors.hints.end]
-foreground = "{palette.cursor_text}"
-background = "{palette.red}"
 
 [colors.selection]
 text = "{palette.selection_fg}"
@@ -377,59 +314,44 @@ blue = "{palette.bright_blue}"
 magenta = "{palette.bright_magenta}"
 cyan = "{palette.bright_cyan}"
 white = "{palette.bright_white}"
-
-[colors.dim]
-black = "{palette.bright_black}"
-red = "{palette.bright_red}"
-green = "{palette.bright_green}"
-yellow = "{palette.bright_yellow}"
-blue = "{palette.bright_blue}"
-magenta = "{palette.bright_magenta}"
-cyan = "{palette.bright_cyan}"
-white = "{palette.bright_white}"
 """
-
         try:
             if config_path.exists():
                 content = config_path.read_text(encoding="utf-8")
-                # Remove any existing [colors...] tables
-                # Split at first [colors and rejoin before next top-level table or append
-                cleaned = re.sub(r"\[colors[\s\S]*?(?=\n\[(?!colors)|$)", "", content).strip()
-                new_content = cleaned + "\n\n# --- Colors auto-configured by krice ---\n[colors]\ndraw_bold_text_with_bright_colors = true\n\n" + colors_toml
-                config_path.write_text(new_content, encoding="utf-8")
+                content = re.sub(r"\[colors.*?(\n\[|\Z)", r"\1", content, flags=re.DOTALL).strip()
+                content += "\n\n" + colors_toml
+                config_path.write_text(content.strip() + "\n", encoding="utf-8")
             else:
-                # Create standard modern Alacritty config
-                default_tmpl = f"""# Alacritty Configuration - Managed by krice
-
-[general]
-live_config_reload = true
-
+                config_path.write_text(
+                    f"""# Alacritty Configuration - Managed by krice
 [window]
-dimensions = {{ columns = 110, lines = 32 }}
-padding = {{ x = 14, y = 12 }}
-opacity = 0.94
+opacity = 0.88
 blur = true
-decorations = "Full"
+padding = {{ x = 0, y = 0 }}
 
 [font]
 size = 11.5
-
-[colors]
-draw_bold_text_with_bright_colors = true
+normal = {{ family = "MesloLGS Nerd Font", style = "Regular" }}
 
 {colors_toml}
-"""
-                config_path.write_text(default_tmpl, encoding="utf-8")
+""",
+                    encoding="utf-8",
+                )
 
-            return True, f"Alacritty color theme set to '{palette.name}'."
+            return True, f"Alacritty 配色已成功设置为 '{palette.name}'。"
         except Exception as e:
-            return False, f"Failed to update Alacritty theme: {e}"
+            return False, f"更新 Alacritty 配置失败: {e}"
 
     # 3. Kitty
-    def apply_kitty(self, palette: TerminalPalette) -> tuple[bool, str]:
-        """Applies theme to Kitty terminal."""
+    def apply_kitty(self, palette: Union[str, TerminalPalette]) -> tuple[bool, str]:
+        """应用配色方案至 Kitty 终端（包含顶部圆角药丸 Tab 与磨砂亚克力玻璃）。"""
+        pal = self._resolve_palette(palette)
+        if not pal:
+            return False, f"未知的调色板 '{palette}'"
+        palette = pal
+
         if self.dry_run:
-            return True, f"[Dry-run] Would apply Kitty color theme: {palette.name}"
+            return True, f"[演练模拟] 将为 Kitty 应用调色板: {palette.name}"
 
         kitty_dir = self.config_dir / "kitty"
         kitty_dir.mkdir(parents=True, exist_ok=True)
@@ -462,11 +384,11 @@ color13 {palette.bright_magenta}
 color14 {palette.bright_cyan}
 color15 {palette.bright_white}
 
-# Tab bar colors
+# Tab bar colors (Rounded Pill / Bubble Tabs)
 active_tab_background {palette.blue}
 active_tab_foreground #FFFFFF
 inactive_tab_background {palette.selection_bg}
-inactive_tab_foreground {palette.dim_foreground}
+inactive_tab_foreground {palette.dim_foreground or '#52707A'}
 tab_bar_background {palette.background}
 tab_bar_margin_color {palette.background}
 
@@ -477,33 +399,32 @@ inactive_border_color {palette.selection_bg}
         try:
             theme_file.write_text(theme_content, encoding="utf-8")
             if main_config.exists():
-                main_txt = main_config.read_text(encoding="utf-8")
-                if "include current-theme.conf" not in main_txt:
-                    main_config.write_text(main_txt + "\ninclude current-theme.conf\n", encoding="utf-8")
+                c_txt = main_config.read_text(encoding="utf-8")
+                if "include current-theme.conf" not in c_txt:
+                    main_config.write_text("include current-theme.conf\n" + c_txt, encoding="utf-8")
             else:
-                font_family, font_size = self.get_system_monospace_font()
                 default_kitty_conf = f"""# Kitty Terminal Configuration - Managed by krice
 include current-theme.conf
 
-# Typography
+# 排版字体设置
 font_family      MesloLGS Nerd Font
 bold_font        auto
 italic_font      auto
 bold_italic_font auto
-font_size        {font_size}
+font_size        11.5
 
-# Window & Frosted Glass Transparency
+# 窗口与亚克力磨砂毛玻璃
 window_padding_width 0
 background_opacity 0.78
 background_blur 32
 dynamic_background_opacity yes
 
-# Cursor
+# 光标样式
 cursor_shape beam
 cursor_beam_thickness 1.8
 cursor_blink_interval 0.5
 
-# Tab Bar Styling (Top Powerline Rounded Bubble Tabs)
+# 顶部圆角药丸 Tab 栏 (Top Powerline Rounded Bubble Tabs)
 tab_bar_edge top
 tab_bar_style powerline
 tab_powerline_style round
@@ -514,7 +435,7 @@ tab_title_template " 󰓩 {{index}}: {{title}} "
 active_tab_font_style bold
 inactive_tab_font_style normal
 
-# Shortcuts
+# 快捷键配置
 map ctrl+shift+t new_tab
 map ctrl+shift+w close_tab
 map ctrl+shift+right next_tab
@@ -525,27 +446,33 @@ map ctrl+shift+3 goto_tab 3
 map ctrl+shift+4 goto_tab 4
 map ctrl+shift+5 goto_tab 5
 
-# Live Opacity Adjustments
+# 实时透明度调节快捷键
 map ctrl+shift+u set_background_opacity +0.05
 map ctrl+shift+o set_background_opacity -0.05
 map ctrl+shift+delete set_background_opacity default
 """
                 main_config.write_text(default_kitty_conf, encoding="utf-8")
-            # Signal Kitty if running
+
+            # 向 Kitty 进程发送热重载信号
             try:
                 subprocess.run(["pkill", "-USR1", "kitty"], check=False, capture_output=True)
             except Exception:
                 pass
 
-            return True, f"Kitty color theme set to '{palette.name}'."
+            return True, f"Kitty 主题已成功设置为 '{palette.name}'。"
         except Exception as e:
-            return False, f"Failed to update Kitty theme: {e}"
+            return False, f"更新 Kitty 配置失败: {e}"
 
     # 4. Ghostty
-    def apply_ghostty(self, palette: TerminalPalette) -> tuple[bool, str]:
-        """Applies theme to Ghostty terminal."""
+    def apply_ghostty(self, palette: Union[str, TerminalPalette]) -> tuple[bool, str]:
+        """应用配色方案至 Ghostty 终端。"""
+        pal = self._resolve_palette(palette)
+        if not pal:
+            return False, f"未知的调色板 '{palette}'"
+        palette = pal
+
         if self.dry_run:
-            return True, f"[Dry-run] Would apply Ghostty color theme: {palette.name}"
+            return True, f"[演练模拟] 将为 Ghostty 应用调色板: {palette.name}"
 
         ghostty_dir = self.config_dir / "ghostty"
         ghostty_themes = ghostty_dir / "themes"
@@ -581,86 +508,104 @@ palette = 15={palette.bright_white}
         try:
             theme_file.write_text(theme_content, encoding="utf-8")
             if config_path.exists():
-                cfg_txt = config_path.read_text(encoding="utf-8")
-                if re.search(r"^theme\s*=", cfg_txt, re.MULTILINE):
-                    cfg_txt = re.sub(r"^theme\s*=.*", f"theme = krice-{palette.name}", cfg_txt, flags=re.MULTILINE)
+                c_txt = config_path.read_text(encoding="utf-8")
+                if "theme = " in c_txt:
+                    c_txt = re.sub(r"theme\s*=\s*.*", f"theme = krice-{palette.name}", c_txt)
                 else:
-                    cfg_txt += f"\ntheme = krice-{palette.name}\n"
-                config_path.write_text(cfg_txt, encoding="utf-8")
+                    c_txt = f"theme = krice-{palette.name}\n" + c_txt
+                config_path.write_text(c_txt, encoding="utf-8")
             else:
                 config_path.write_text(f"theme = krice-{palette.name}\nbackground-opacity = 0.94\n", encoding="utf-8")
 
-            return True, f"Ghostty color theme set to 'krice-{palette.name}'."
+            return True, f"Ghostty 主题已设置为 'krice-{palette.name}'。"
         except Exception as e:
-            return False, f"Failed to update Ghostty theme: {e}"
+            return False, f"更新 Ghostty 配置失败: {e}"
 
     # 5. Foot
-    def apply_foot(self, palette: TerminalPalette) -> tuple[bool, str]:
-        """Applies theme to Foot terminal."""
+    def apply_foot(self, palette: Union[str, TerminalPalette]) -> tuple[bool, str]:
+        """应用配色方案至 Foot Wayland 终端。"""
+        pal = self._resolve_palette(palette)
+        if not pal:
+            return False, f"未知的调色板 '{palette}'"
+        palette = pal
+
         if self.dry_run:
-            return True, f"[Dry-run] Would apply Foot color theme: {palette.name}"
+            return True, f"[演练模拟] 将为 Foot 应用调色板: {palette.name}"
 
         foot_dir = self.config_dir / "foot"
         foot_dir.mkdir(parents=True, exist_ok=True)
         config_path = foot_dir / "foot.ini"
 
-        def clean_hex(h: str) -> str:
+        def hex_no_hash(h: str) -> str:
             return h.lstrip("#")
 
         colors_ini = f"""[colors]
-background={clean_hex(palette.background)}
-foreground={clean_hex(palette.foreground)}
-regular0={clean_hex(palette.black)}
-regular1={clean_hex(palette.red)}
-regular2={clean_hex(palette.green)}
-regular3={clean_hex(palette.yellow)}
-regular4={clean_hex(palette.blue)}
-regular5={clean_hex(palette.magenta)}
-regular6={clean_hex(palette.cyan)}
-regular7={clean_hex(palette.white)}
-bright0={clean_hex(palette.bright_black)}
-bright1={clean_hex(palette.bright_red)}
-bright2={clean_hex(palette.bright_green)}
-bright3={clean_hex(palette.bright_yellow)}
-bright4={clean_hex(palette.bright_blue)}
-bright5={clean_hex(palette.bright_magenta)}
-bright6={clean_hex(palette.bright_cyan)}
-bright7={clean_hex(palette.bright_white)}
-selection-foreground={clean_hex(palette.selection_fg)}
-selection-background={clean_hex(palette.selection_bg)}
+alpha=0.94
+background={hex_no_hash(palette.background)}
+foreground={hex_no_hash(palette.foreground)}
+regular0={hex_no_hash(palette.black)}
+regular1={hex_no_hash(palette.red)}
+regular2={hex_no_hash(palette.green)}
+regular3={hex_no_hash(palette.yellow)}
+regular4={hex_no_hash(palette.blue)}
+regular5={hex_no_hash(palette.magenta)}
+regular6={hex_no_hash(palette.cyan)}
+regular7={hex_no_hash(palette.white)}
+bright0={hex_no_hash(palette.bright_black)}
+bright1={hex_no_hash(palette.bright_red)}
+bright2={hex_no_hash(palette.bright_green)}
+bright3={hex_no_hash(palette.bright_yellow)}
+bright4={hex_no_hash(palette.bright_blue)}
+bright5={hex_no_hash(palette.bright_magenta)}
+bright6={hex_no_hash(palette.bright_cyan)}
+bright7={hex_no_hash(palette.bright_white)}
 """
         try:
             if config_path.exists():
-                content = config_path.read_text(encoding="utf-8")
-                cleaned = re.sub(r"\[colors\][\s\S]*?(?=\n\[|$)", "", content).strip()
-                new_content = cleaned + "\n\n" + colors_ini
-                config_path.write_text(new_content, encoding="utf-8")
+                c_txt = config_path.read_text(encoding="utf-8")
+                c_txt = re.sub(r"\[colors.*?(\n\[|\Z)", r"\1", c_txt, flags=re.DOTALL).strip()
+                c_txt += "\n\n" + colors_ini
+                config_path.write_text(c_txt.strip() + "\n", encoding="utf-8")
             else:
-                config_path.write_text(colors_ini, encoding="utf-8")
+                config_path.write_text(
+                    f"""# Foot Configuration - Managed by krice
+[main]
+font=MesloLGS Nerd Font:size=11.5
+pad=0x0
 
-            return True, f"Foot color theme set to '{palette.name}'."
+{colors_ini}
+""",
+                    encoding="utf-8",
+                )
+            return True, f"Foot 主题已设置为 '{palette.name}'。"
         except Exception as e:
-            return False, f"Failed to update Foot theme: {e}"
+            return False, f"更新 Foot 配置失败: {e}"
 
     # 6. WezTerm
-    def apply_wezterm(self, palette: TerminalPalette) -> tuple[bool, str]:
-        """Applies theme to WezTerm terminal."""
+    def apply_wezterm(self, palette: Union[str, TerminalPalette]) -> tuple[bool, str]:
+        """应用配色方案至 WezTerm 终端。"""
+        pal = self._resolve_palette(palette)
+        if not pal:
+            return False, f"未知的调色板 '{palette}'"
+        palette = pal
+
         if self.dry_run:
-            return True, f"[Dry-run] Would apply WezTerm color theme: {palette.name}"
+            return True, f"[演练模拟] 将为 WezTerm 应用调色板: {palette.name}"
 
         wezterm_dir = self.config_dir / "wezterm"
         colors_dir = wezterm_dir / "colors"
         colors_dir.mkdir(parents=True, exist_ok=True)
         theme_file = colors_dir / f"krice-{palette.name}.toml"
-        lua_config = wezterm_dir / "wezterm.lua"
 
         theme_toml = f"""[colors]
-foreground = "{palette.foreground}"
 background = "{palette.background}"
+foreground = "{palette.foreground}"
 cursor_bg = "{palette.cursor}"
+cursor_border = "{palette.cursor}"
 cursor_fg = "{palette.cursor_text}"
 selection_bg = "{palette.selection_bg}"
 selection_fg = "{palette.selection_fg}"
+
 ansi = [
   "{palette.black}",
   "{palette.red}",
@@ -671,6 +616,7 @@ ansi = [
   "{palette.cyan}",
   "{palette.white}",
 ]
+
 brights = [
   "{palette.bright_black}",
   "{palette.bright_red}",
@@ -684,30 +630,28 @@ brights = [
 """
         try:
             theme_file.write_text(theme_toml, encoding="utf-8")
-            if lua_config.exists():
-                lua_txt = lua_config.read_text(encoding="utf-8")
-                if "color_scheme" in lua_txt:
-                    lua_txt = re.sub(r'config\.color_scheme\s*=\s*["\'].*?["\']', f'config.color_scheme = "krice-{palette.name}"', lua_txt)
+            config_lua = wezterm_dir / "wezterm.lua"
+            if config_lua.exists():
+                c_txt = config_lua.read_text(encoding="utf-8")
+                if "color_scheme" in c_txt:
+                    c_txt = re.sub(r'color_scheme\s*=\s*["\'].*?["\']', f'color_scheme = "krice-{palette.name}"', c_txt)
                 else:
-                    lua_txt += f'\nconfig.color_scheme = "krice-{palette.name}"\n'
-                lua_config.write_text(lua_txt, encoding="utf-8")
-            else:
-                lua_config.write_text(f"""local wezterm = require 'wezterm'
-local config = wezterm.config_builder()
-config.color_scheme = 'krice-{palette.name}'
-config.window_background_opacity = 0.94
-return config
-""", encoding="utf-8")
-
-            return True, f"WezTerm color theme set to 'krice-{palette.name}'."
+                    c_txt = f'config.color_scheme = "krice-{palette.name}"\n' + c_txt
+                config_lua.write_text(c_txt, encoding="utf-8")
+            return True, f"WezTerm 主题已设置为 'krice-{palette.name}'。"
         except Exception as e:
-            return False, f"Failed to update WezTerm theme: {e}"
+            return False, f"更新 WezTerm 配置失败: {e}"
 
-    # 6b. Zellij (Terminal Multiplexer)
-    def apply_zellij(self, palette: TerminalPalette) -> tuple[bool, str]:
-        """Applies theme to Zellij terminal multiplexer."""
+    # 6b. Zellij
+    def apply_zellij(self, palette: Union[str, TerminalPalette]) -> tuple[bool, str]:
+        """应用配色方案至 Zellij 终端多路复用器。"""
+        pal = self._resolve_palette(palette)
+        if not pal:
+            return False, f"未知的调色板 '{palette}'"
+        palette = pal
+
         if self.dry_run:
-            return True, f"[Dry-run] Would apply Zellij color theme: {palette.name}"
+            return True, f"[演练模拟] 将为 Zellij 应用调色板: {palette.name}"
 
         zellij_dir = self.config_dir / "zellij"
         themes_dir = zellij_dir / "themes"
@@ -732,7 +676,6 @@ return config
 """
         try:
             theme_file.write_text(theme_kdl, encoding="utf-8")
-            # Ensure modern sleek UI parameters in config.kdl
             config_file = zellij_dir / "config.kdl"
             if config_file.exists():
                 c_txt = config_file.read_text(encoding="utf-8")
@@ -740,65 +683,43 @@ return config
                     c_txt = re.sub(r'theme\s+["\'].*?["\']', f'theme "krice-{palette.name}"', c_txt)
                 else:
                     c_txt = f'theme "krice-{palette.name}"\n' + c_txt
-                if "pane_frames " in c_txt:
-                    c_txt = re.sub(r'pane_frames\s+\w+', 'pane_frames false', c_txt)
-                else:
-                    c_txt = 'pane_frames false\n' + c_txt
-                if "default_layout " in c_txt:
-                    c_txt = re.sub(r'default_layout\s+["\'].*?["\']', 'default_layout "compact"', c_txt)
-                else:
-                    c_txt = 'default_layout "compact"\n' + c_txt
-                if "simplified_ui " in c_txt:
-                    c_txt = re.sub(r'simplified_ui\s+\w+', 'simplified_ui true', c_txt)
-                else:
-                    c_txt = 'simplified_ui true\n' + c_txt
                 config_file.write_text(c_txt, encoding="utf-8")
             else:
-                config_file.write_text(f"""theme "krice-{palette.name}"
-default_layout "compact"
-pane_frames false
-simplified_ui true
-mouse_mode true
-copy_on_select true
-""", encoding="utf-8")
-
-            # Also create layouts/compact.kdl if desired
-            layouts_dir = zellij_dir / "layouts"
-            layouts_dir.mkdir(parents=True, exist_ok=True)
-            layout_file = layouts_dir / "compact.kdl"
-            if not layout_file.exists():
-                layout_file.write_text("""layout {
-    pane size=1 borderless=true {
-        plugin location="zellij:compact-bar"
-    }
-    pane borderless=true
-}
-""", encoding="utf-8")
-
-            return True, f"Zellij color theme set to 'krice-{palette.name}' (Sleek Compact UI enabled)."
+                config_file.write_text(f'theme "krice-{palette.name}"\ndefault_layout "compact"\n', encoding="utf-8")
+            return True, f"Zellij 主题已设置为 'krice-{palette.name}'。"
         except Exception as e:
-            return False, f"Failed to update Zellij theme: {e}"
+            return False, f"更新 Zellij 配置失败: {e}"
 
-    # 7. Starship Shell Prompt
-    def apply_starship(self, palette: TerminalPalette) -> tuple[bool, str]:
-        """Applies matching Starship prompt theme."""
+    # 7. Starship Shell 提示符
+    def apply_starship(self, palette: Union[str, TerminalPalette]) -> tuple[bool, str]:
+        """应用匹配的 Starship 全圆角工作目录胶囊提示符配置。"""
+        pal = self._resolve_palette(palette)
+        if not pal:
+            return False, f"未知的调色板 '{palette}'"
+        palette = pal
+
         if self.dry_run:
-            return True, f"[Dry-run] Would apply Starship prompt theme matching: {palette.name}"
+            return True, f"[演练模拟] 将为 Starship 应用调色板: {palette.name}"
 
         starship_file = self.config_dir / "starship.toml"
         starship_file.parent.mkdir(parents=True, exist_ok=True)
         try:
             config_content = generate_starship_config(palette)
             starship_file.write_text(config_content, encoding="utf-8")
-            return True, f"Starship prompt updated to match '{palette.display_name}'."
+            return True, f"Starship 提示符已成功匹配调色板 '{palette.display_name}'。"
         except Exception as e:
-            return False, f"Failed to update starship.toml: {e}"
+            return False, f"更新 starship.toml 失败: {e}"
 
     # 8. Fastfetch
-    def apply_fastfetch(self, palette: TerminalPalette) -> tuple[bool, str]:
-        """Applies matching Fastfetch display colors."""
+    def apply_fastfetch(self, palette: Union[str, TerminalPalette]) -> tuple[bool, str]:
+        """应用匹配的 Fastfetch 硬件美化展示看板配色。"""
+        pal = self._resolve_palette(palette)
+        if not pal:
+            return False, f"未知的调色板 '{palette}'"
+        palette = pal
+
         if self.dry_run:
-            return True, f"[Dry-run] Would apply Fastfetch theme matching: {palette.name}"
+            return True, f"[演练模拟] 将为 Fastfetch 应用调色板: {palette.name}"
 
         fastfetch_dir = self.config_dir / "fastfetch"
         fastfetch_dir.mkdir(parents=True, exist_ok=True)
@@ -806,22 +727,21 @@ copy_on_select true
         try:
             content = generate_fastfetch_config(palette)
             config_path.write_text(content, encoding="utf-8")
-            return True, f"Fastfetch configuration updated to match '{palette.display_name}'."
+            return True, f"Fastfetch 硬件看板已成功匹配调色板 '{palette.display_name}'。"
         except Exception as e:
-            return False, f"Failed to update Fastfetch config: {e}"
+            return False, f"更新 Fastfetch 配置失败: {e}"
 
-    # --- Unified Multi-Terminal Apply ---
+    # --- 全终端统一批量应用 ---
 
     def apply_all(
         self,
         palette_or_name: Union[str, TerminalPalette],
         terminals: Optional[list[str]] = None,
     ) -> dict[str, tuple[bool, str]]:
-        """Synchronously applies the color palette across all detected/installed terminals & CLI tools."""
+        """全量同步应用调色板至所有已安装的终端模拟器与 Shell 工具。"""
         if isinstance(palette_or_name, str):
             palette = self.get_palette(palette_or_name)
             if not palette:
-                # Try fallback extraction or error
                 palette = self.extract_palette_from_kde()
         else:
             palette = palette_or_name
@@ -835,7 +755,6 @@ copy_on_select true
                 return True
             return key.lower() in allowed
 
-        # Always update Konsole & Alacritty if installed or configs exist
         if should_run("konsole") and detected.get("konsole", True):
             results["Konsole"] = self.apply_konsole(palette)
 
