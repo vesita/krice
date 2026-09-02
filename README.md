@@ -1,151 +1,125 @@
-"""# krice (KDE Plasma 6 & Terminal Rice Toolkit)
+# krice (KDE Plasma 6 & Terminal Rice Toolkit)
 
-**krice** 是专为 **CachyOS / Arch Linux + KDE Plasma 6** 设计的全维度桌面美化（Rice）、终端全端配色同步、物理动效调优与跨设备配置打包工具箱。
+**krice** 是专为 **CachyOS / Arch Linux + KDE Plasma 6 (Wayland)** 量身定制的全维度桌面美化（Rice）、终端全生态调色联动、物理流体动效调优与跨设备配置无损迁移工具箱。
 
 ---
 
 ## 🌟 核心能力
 
-1. **🎨 视觉主题全链路编排 (`krice theme`)**：
-   - **全面覆盖 KDE Plasma 6 视觉要素**：全局主题（Look & Feel）、配色方案（Color Schemes）、Plasma 桌面样式（面板与任务栏）、Qt6 部件引擎（Breeze / Kvantum / Fusion / Lightly）、Kvantum SVG 主题、Klassy 窗口圆角与毛玻璃边框、图标（Icons）、光标（Cursors）、字体设置（Fonts）、开机动效（Splash）与 GTK 3/4 样式暗色偏好同步。
-   - **动态调色板提炼**：实时提取当前 KDE 配色方案的色彩模型（背景、前景色、强调色、选区高亮色），并支持一键将 KDE 配色反向映射至终端。
+1. **🎨 桌面视觉主题全链路编排 (`krice theme`)**：
+   - **全面覆盖 KDE Plasma 6 核心要素**：全局外观（Look & Feel）、配色方案（Color Schemes）、Plasma 桌面面板样式（Panel/Bar）、Qt6 控件引擎（Breeze / Kvantum / Fusion）、Kvantum SVG 主题、窗口装饰（org.kde.breeze 亚像素精准渲染 / Klassy）、图标（Icons）、鼠标指针（Cursors）、系统字体（Fonts）、开机欢迎屏幕（Splash）与 GTK 3/4 样式统一联动。
+   - **智能调色板提取**：实时从当前 KDE 配色中提取色彩模型（背景色、前景色、强调蓝、选区高亮色），并支持一键反向注入多终端。
 
-2. **💻 终端与 Shell 全生态配色同步 (`krice terminal`)**：
-   - **主流终端全覆盖**：KDE 原生 Konsole、Alacritty、Kitty、Ghostty、Foot、WezTerm。
-   - **命令行工具联动**：自动生成与调色板匹配的 **Starship** 现代化胶囊提示符（Pill Powerline）以及 **Fastfetch** 系统看板。
-   - **双向联动**：支持应用内置预设（Nord、Catppuccin、Tokyo Night、Dracula、Gruvbox、Rosé Pine、Orchis 等），或使用 `krice terminal sync` 动态提取当前 KDE 配色一键注入全部终端。
+2. **💻 Kitty 终端与 Shell 提示符全生态联动 (`krice terminal`)**：
+   - **Kitty 终端一等公民支持**：包含 GPU 加速渲染、顶部斜切 Powerline Tab（Slanted Tabs）、`0.78` 浅亮色半透明磨砂亚克力毛玻璃（Frosted Acrylic Blur）、天然内边距与实时透明度调节快捷键（`Ctrl+Shift+O` / `Ctrl+Shift+U`）。
+   - **精准字体排版**：明确指定官方 `MesloLGS Nerd Font`（11.5pt），彻底根除因 `monospace` 别名解析至中日韩 CJK 字体引起的英文字符双倍宽字距/稀疏 bug。
+   - **Shell 现代化工作目录胶囊提示符**：自动生成与配色匹配的 **Starship** 现代化工作目录胶囊（Directory Pill）、Git 状态与执行耗时指示器，以及 **Fastfetch** 系统硬件看板。
 
-3. **⚡ Denial-Style 物理流体动效 (`krice motion`)**：
-   - 一键注入类似 `denialwm/denial`（Flutter EaseOutCubic / Spring）的窗口开关平滑缩放动效。
-   - 内置动效预设：`denial`（流体缩放）、`denial-vivid`（深层动量放大）、`glide`（拟物滑翔）、`snappy`（高刷竞技）、`spring-wobbly`（弹性果冻）。
-   - 自动消除 KWin 动效冲突（屏蔽原生生硬的 Fade，激活 Scale + Morphing Popups）。
+3. **⚡ 物理流体与高刷动效调优 (`krice motion`)**：
+   - **消除 60Hz 帧步进滞后感**：动效缩放因子校准至 `0.50x`，配合 150ms 弹簧缩放与 `92% -> 100%` Ease-Out 弹出曲线。
+   - **非激活窗口微暗（Dim Inactive）**：开启 10% 柔和失焦暗化，窗口层级与焦点切换清晰顺滑。
+   - **缩略图网格切换器（Thumbnail Grid）**：开启现代缩略图网格任务切换器，替代传统卡片。
+   - **硬件级背景毛玻璃**：KWin 合成器模糊强度（BlurStrength）调优至 `12`，亚克力质感深邃通透。
 
-4. **📦 跨电脑一键打包与无损还原 (`krice snapshot`)**：
-   - 自动打包 KDE 核心配置文件（`kwinrc`、`kdeglobals`、`kcminputrc`、`plasmarc`、`ksplashrc`、小部件布局、Klassy、Kvantum、GTK、全部终端配置、Starship、Fastfetch、Fcitx5 等）为单一便携包（`.pmz`）。
-   - 跨机器还原时支持自动安全备份（`--backup`）、差异预检（`--dry-run`）与 D-Bus KWin 热重载。
+4. **📦 跨机器配置打包、无损还原与依赖自愈 (`krice snapshot` / `krice install`)**：
+   - **精准打包范围**：聚焦于 **Orchis 主题套件、KWin 动效与毛玻璃、Kitty 终端、Starship 提示符与 Fish/Zsh/Bash Shell 配置、本地字体与指针图标**，生成单一便携快照（`.pmz`）。
+   - **内嵌智能安装器与依赖自愈**：目标机器若缺少 Kitty、Starship、MesloLGS Nerd Font 或 Shell Hook，运行 `krice install --all` 或 `krice snapshot load --install-deps` 即可全自动一键补齐所有软件包、字体并自动注入 Shell 工作目录提示符！
 
-5. **🛠️ 桌面状态与工具链诊断 (`krice status` / `krice check-deps`)**：
-   - 实时诊断 Wayland 会话、KWin 动效因子、部件样式引擎、已安装终端、毛玻璃、窗口装饰库。
-   - 针对 CachyOS / Arch 自动检测并提供 `klassy-qt6`、`kvantum-qt6`、`starship`、`fastfetch` 等工具的一键安装指令。
+5. **🏥 系统健康诊断与工具链审计 (`krice doctor` / `krice status`)**：
+   - 实时诊断 Wayland 会话、KWin 动效参数、已安装终端、字体有效性与三大 Shell（Fish / Zsh / Bash）的前缀提示符挂钩状态。
 
 ---
 
 ## 🚀 常用指令速查
 
-在项目根目录下通过 `uv run` 即可直接使用：
+在项目根目录下通过 `uv run` 即可直接执行：
 
-### 1. 桌面与终端状态概览
+### 1. 系统诊断与环境检查
 ```bash
+# 查看当前 KDE 桌面主题、动效与终端集成总览看板
 uv run krice status
-uv run krice check-deps
+
+# 全面诊断工具链依赖、Nerd Fonts 字体与 Shell 挂钩健康状态
+uv run krice doctor
 ```
 
-### 2. 整合式桌面风格切换 (KDE + 终端 + 动效 一键同步)
+### 2. 内嵌安装器（补齐依赖、字体与 Shell 提示符）
 ```bash
-# 查看所有整合式风格预设 (Nord, Catppuccin, Tokyo Night, Dracula, Gruvbox...)
+# 一键自动安装所有缺失软件包、下载 MesloLGS 字体并配置 Shell 提示符
+uv run krice install --all
+
+# 仅在 fish、zsh、bash 中注入 Starship 工作目录前缀提示符
+uv run krice install --hooks
+
+# 仅下载并安装 MesloLGS Nerd Font 官方全套字重至 ~/.local/share/fonts/
+uv run krice install --fonts
+```
+
+### 3. 全局桌面方案一键切换 (KDE + Kitty + Shell + 动效)
+```bash
+# 查看所有预设的全局美化方案 (cachy-nord, catppuccin-latte, tokyo-night...)
 uv run krice theme list
 
-# 一键应用 CachyOS Nord 暗色风格 (KDE + 终端 + Starship + Fastfetch + Denial动效)
+# 一键应用 CachyOS Nord 风格 (全套 KDE + Kitty + Starship + Fastfetch + 动效)
 uv run krice theme apply cachy-nord
 
-# 应用 Catppuccin Mocha 风格
-uv run krice theme apply catppuccin-mocha
-
-# 仅应用 KDE 桌面样式，跳过终端
-uv run krice theme apply tokyo-night --no-terminal
+# 应用 Catppuccin 浅色奶油风格
+uv run krice theme apply catppuccin-latte
 ```
 
-### 3. 独立管理终端与 Shell 提示符
+### 4. Kitty 终端与 Shell 提示符管理
 ```bash
-# 查看支持的调色板及当前系统检测到的终端
+# 查看所有 16 色 ANSI 调色板
 uv run krice terminal list
 
-# 一键同步所有终端（Konsole, Alacritty, Kitty, Ghostty, Foot, WezTerm, Starship, Fastfetch）
-uv run krice terminal apply catppuccin-mocha
-
-# 动态提取当前 KDE 配色并直接注入到所有终端
+# 从当前 KDE 桌面活动配色中智能提取并一键同步所有终端
 uv run krice terminal sync
 
-# 针对单一终端独立设置
-uv run krice terminal set-alacritty cachy-nord
-uv run krice terminal set-konsole dracula
-uv run krice terminal set-kitty tokyo-night
-uv run krice terminal set-starship gruvbox-dark
+# 单独为 Kitty 应用浅色调色板（保持半透明磨砂毛玻璃与斜切 Tab）
+uv run krice terminal set-kitty nord-light
+uv run krice terminal set-kitty catppuccin-latte
 
-# 查看或导出特定调色板的 16 色 ANSI 色卡
-uv run krice terminal export-palette cachy-nord
+# 单独为 Starship 提示符应用配色
+uv run krice terminal set-starship nord-light
 ```
 
-### 4. 细分管理 KDE 桌面视觉元素
+#### 💡 Kitty 常用快捷键：
+- **`Ctrl + Shift + T`**：新建 Tab
+- **`Ctrl + Shift + W`**：关闭当前 Tab
+- **`Ctrl + Shift + Left / Right`**：左右切换 Tab
+- **`Ctrl + Shift + 1 ~ 5`**：快速直达指定 Tab
+- **`Ctrl + Shift + Enter`**：垂直分屏（Vertical Split）
+- **`Ctrl + Shift + D`**：水平分屏（Horizontal Split）
+- **`Ctrl + Shift + H / J / K / L`**：分屏方向导航
+- **`Ctrl + Shift + O`**：**实时减小不透明度（更透亮 / 玻璃感更强）**
+- **`Ctrl + Shift + U`**：**实时增大不透明度（字更实）**
+- **`Ctrl + Shift + Delete`**：恢复默认推荐透明度 (`0.78`)
+
+### 5. 动效管理与调优
 ```bash
-# 配色方案 (Color Schemes)
-uv run krice theme colors
-uv run krice theme set-color CachyOSNord
-
-# Qt6 部件样式引擎 (Widget Style Engines)
-uv run krice theme widget-styles
-uv run krice theme set-widget-style kvantum
-
-# Kvantum SVG 主题
-uv run krice theme kvantum-themes
-uv run krice theme set-kvantum Nordic
-
-# Plasma 桌面样式 (面板/启动器/系统托盘背景)
-uv run krice theme plasma-style
-uv run krice theme set-plasma-style Nordic
-
-# 窗口装饰与 Klassy 圆角微调
-uv run krice theme decorations
-uv run krice theme set-decoration klassy --radius 12 --blur
-
-# 全局外观包 (Global Look & Feel)
-uv run krice theme global
-uv run krice theme set-global Edna-Light
-
-# 鼠标指针与图标
-uv run krice theme cursors
-uv run krice theme set-cursor Breeze_Dark --size 24
-uv run krice theme icons
-uv run krice theme set-icon Papirus-Dark
-
-# 字体与开机动效
-uv run krice theme fonts
-uv run krice theme splash
-uv run krice theme set-splash org.kde.breeze.desktop
-
-# GTK 3/4 主题与暗色偏好同步
-uv run krice theme gtk
-uv run krice theme sync-gtk --dark
-
-# 提取当前 KDE 调色板 HEX 摘要
-uv run krice theme palette
-
-# 壁纸切换
-uv run krice theme set-wallpaper /path/to/wallpaper.png
-```
-
-### 5. 动效单独微调
-```bash
-# 查看动效预设
+# 查看动效预设方案
 uv run krice motion list
 
-# 启用 Denial 风格流体缩放
+# 启用 Denial 风格流体物理缩放
 uv run krice motion apply denial
 
-# 微调动画速度因数 (0.85x 为舒适流体，0.30x 为极速)
-uv run krice motion tune --factor 0.85 --effect scale
+# 设置动画缩放因子 (0.50x 为高刷极速流体，1.0x 为默认速度)
+uv run krice motion set-factor 0.50
+
+# 设置 Alt+Tab 任务切换器为缩略图网格
+uv run krice motion set-switcher thumbnail_grid
 ```
 
-### 6. 跨电脑配置导出与导入
+### 6. 跨电脑配置导出与无损还原
 ```bash
-# 1. 在当前电脑保存完整桌面及终端快照
-uv run krice snapshot save --name my-cachy-kde
+# 1. 在当前电脑打包保存完整的 Rice 资产快照 (.pmz)
+uv run krice snapshot save --name cachy-orchis-rice
 
-# 2. 查看快照内容清单
-uv run krice snapshot info snapshots/my-cachy-kde.pmz
+# 2. 查看快照归档包含的文件与元数据
+uv run krice snapshot info snapshots/cachy-orchis-rice.pmz
 
-# 3. 在另一台 CachyOS 电脑上导入并一键应用
-uv run krice snapshot load snapshots/my-cachy-kde.pmz
+# 3. 在另一台电脑上一键还原并自动补齐依赖与 Shell 提示符
+uv run krice snapshot load snapshots/cachy-orchis-rice.pmz --install-deps
 ```
 
 ---
@@ -155,21 +129,20 @@ uv run krice snapshot load snapshots/my-cachy-kde.pmz
 ```
 krice/
 ├── pyproject.toml              # 项目依赖声明 (uv 管理)
-├── README.md                   # 完整使用文档
+├── README.md                   # 完整中文使用指南
 ├── src/krice/
-│   ├── cli.py                  # Rich + Typer 交互控制台
+│   ├── cli.py                  # Rich + Typer 交互控制台与中文界面
 │   ├── inspector.py            # KDE & 终端环境状态诊断器
-│   ├── installer.py            # 工具链与终端依赖检测器
-│   ├── kwin_ctl.py             # KWin D-Bus & kwriteconfig6 控制器
+│   ├── installer.py            # 内嵌智能安装器、依赖求解器与 Shell Hook 注入器
+│   ├── kwin_ctl.py             # KWin D-Bus & kwriteconfig6 合成器控制器
 │   ├── theme_ctl.py            # KDE 全维度主题与部件控制器
-│   ├── terminal_ctl.py         # 终端 (Konsole/Alacritty/Kitty/Ghostty/Foot/WezTerm) 控制器
+│   ├── terminal_ctl.py         # Kitty, Alacritty, Konsole 终端与 Starship 控制器
 │   ├── snapshot.py             # 配置归档打包与跨机器还原引擎
 │   └── presets/
 │       ├── builtin_presets.py  # 动效预设库 (denial, glide, snappy...)
-│       ├── terminal_palettes.py# 16 色 ANSI 终端调色板库
-│       ├── prompt_presets.py   # Starship & Fastfetch 模板生成器
+│       ├── terminal_palettes.py# 16 色 ANSI 终端高清调色板
+│       ├── prompt_presets.py   # Starship 工作目录胶囊与 Fastfetch 模板
 │       └── theme_presets.py    # 整合式 Rice 桌面预设库
 ├── tests/                      # Pytest 自动化测试套件
-└── snapshots/                  # 导出的 .pmz 配置文件
+└── snapshots/                  # 便携式 .pmz 快照归档
 ```
-"""

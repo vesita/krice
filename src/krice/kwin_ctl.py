@@ -12,17 +12,37 @@ from typing import Any
 class KWinController:
     """Manages KWin effects, animation duration factors, and live reconfiguration."""
 
-    def __init__(self, dry_run: bool = False) -> None:
+    def __init__(self, dry_run: bool = False, home_dir: Optional[Path] = None) -> None:
         self.dry_run = dry_run
+        self.home = home_dir or Path.home()
+        self.config_dir = Path(os.environ.get("XDG_CONFIG_HOME", str(self.home / ".config")))
         self.kwriteconfig = shutil.which("kwriteconfig6") or shutil.which("kwriteconfig5") or "kwriteconfig6"
         self.kreadconfig = shutil.which("kreadconfig6") or shutil.which("kreadconfig5") or "kreadconfig6"
         self.qdbus = shutil.which("qdbus6") or shutil.which("qdbus") or "qdbus6"
 
     def read_config(self, file: str, group: str, key: str, default: str = "") -> str:
-        """Reads a value from a KDE configuration file using kreadconfig."""
+        """Reads a value from a KDE configuration file using kreadconfig or INI fallback."""
+        # Direct file parse if custom home/config
+        cfg_file = self.config_dir / file
+        if cfg_file.exists():
+            try:
+                in_group = False
+                for line in cfg_file.read_text(encoding="utf-8", errors="ignore").splitlines():
+                    s = line.strip()
+                    if s.startswith("[") and s.endswith("]"):
+                        in_group = (s[1:-1].strip() == group)
+                    elif in_group and "=" in s and not s.startswith("#"):
+                        k, v = s.split("=", 1)
+                        if k.strip() == key:
+                            return v.strip()
+            except Exception:
+                pass
+
         cmd = [self.kreadconfig, "--file", file, "--group", group, "--key", key]
         try:
-            res = subprocess.run(cmd, capture_output=True, text=True, check=False)
+            env = os.environ.copy()
+            env["XDG_CONFIG_HOME"] = str(self.config_dir)
+            res = subprocess.run(cmd, capture_output=True, text=True, env=env, check=False)
             output = res.stdout.strip()
             return output if output else default
         except Exception:
@@ -35,7 +55,9 @@ class KWinController:
             return True
         cmd = [self.kwriteconfig, "--file", file, "--group", group, "--key", key, val_str]
         try:
-            res = subprocess.run(cmd, capture_output=True, text=True, check=False)
+            env = os.environ.copy()
+            env["XDG_CONFIG_HOME"] = str(self.config_dir)
+            res = subprocess.run(cmd, capture_output=True, text=True, env=env, check=False)
             return res.returncode == 0
         except Exception:
             return False

@@ -26,14 +26,14 @@ def test_cli_help() -> None:
 def test_status_dashboard() -> None:
     result = runner.invoke(app, ["status"])
     assert result.exit_code == 0
-    assert "Active KDE Theme" in result.output or "Active Theme" in result.output
-    assert "Terminal & Shell Tooling" in result.output
+    assert "KDE" in result.output
+    assert "终端" in result.output or "Terminal" in result.output
 
 
 def test_check_deps() -> None:
     result = runner.invoke(app, ["check-deps"])
     assert result.exit_code == 0
-    assert "klassy-qt6" in result.output
+    assert "kitty" in result.output
     assert "starship" in result.output
     assert "fastfetch" in result.output
 
@@ -49,8 +49,7 @@ def test_theme_commands() -> None:
 
     result_dry_run = runner.invoke(app, ["theme", "apply", "cachy-nord", "--dry-run"])
     assert result_dry_run.exit_code == 0
-    assert "Applying Unified Style" in result_dry_run.output
-    assert "Synchronizing Terminal Themes" in result_dry_run.output
+    assert "正在应用全局桌面方案" in result_dry_run.output
 
 
 def test_terminal_commands() -> None:
@@ -60,7 +59,7 @@ def test_terminal_commands() -> None:
 
     result_apply = runner.invoke(app, ["terminal", "apply", "cachy-nord", "--dry-run"])
     assert result_apply.exit_code == 0
-    assert "Applying Terminal Palette" in result_apply.output
+    assert "正在应用终端调色板" in result_apply.output
 
 
 def test_motion_presets_validity() -> None:
@@ -76,8 +75,8 @@ def test_snapshot_roundtrip(tmp_path: Path) -> None:
     config_dir = home_dir / ".config"
     config_dir.mkdir()
     (config_dir / "kwinrc").write_text("[Plugins]\nscaleEnabled=true\n")
-    (config_dir / "alacritty").mkdir()
-    (config_dir / "alacritty" / "alacritty.toml").write_text("[window]\n")
+    (config_dir / "kitty").mkdir()
+    (config_dir / "kitty" / "kitty.conf").write_text("# kitty config\n")
 
     manager = SnapshotManager(dry_run=False, home_dir=home_dir)
     out_file = tmp_path / "test.pmz"
@@ -88,4 +87,4 @@ def test_snapshot_roundtrip(tmp_path: Path) -> None:
     assert info["name"] == "unit-test"
     assert "files" in info
     assert any("kwinrc" in f for f in info["files"])
-    assert any("alacritty" in f for f in info["files"])
+    assert any("kitty" in f for f in info["files"])

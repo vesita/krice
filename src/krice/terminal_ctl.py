@@ -812,7 +812,11 @@ copy_on_select true
 
     # --- Unified Multi-Terminal Apply ---
 
-    def apply_all(self, palette_or_name: Union[str, TerminalPalette]) -> dict[str, tuple[bool, str]]:
+    def apply_all(
+        self,
+        palette_or_name: Union[str, TerminalPalette],
+        terminals: Optional[list[str]] = None,
+    ) -> dict[str, tuple[bool, str]]:
         """Synchronously applies the color palette across all detected/installed terminals & CLI tools."""
         if isinstance(palette_or_name, str):
             palette = self.get_palette(palette_or_name)
@@ -824,33 +828,39 @@ copy_on_select true
 
         results: dict[str, tuple[bool, str]] = {}
         detected = self.detect_installed_terminals()
+        allowed = [t.lower() for t in terminals] if terminals else None
+
+        def should_run(key: str) -> bool:
+            if allowed is None:
+                return True
+            return key.lower() in allowed
 
         # Always update Konsole & Alacritty if installed or configs exist
-        if detected.get("konsole", True):
+        if should_run("konsole") and detected.get("konsole", True):
             results["Konsole"] = self.apply_konsole(palette)
 
-        if detected.get("alacritty", True):
+        if should_run("alacritty") and detected.get("alacritty", True):
             results["Alacritty"] = self.apply_alacritty(palette)
 
-        if detected.get("kitty", False) or (self.config_dir / "kitty").exists():
+        if should_run("kitty") and (detected.get("kitty", False) or (self.config_dir / "kitty").exists()):
             results["Kitty"] = self.apply_kitty(palette)
 
-        if detected.get("ghostty", False) or (self.config_dir / "ghostty").exists():
+        if should_run("ghostty") and (detected.get("ghostty", False) or (self.config_dir / "ghostty").exists()):
             results["Ghostty"] = self.apply_ghostty(palette)
 
-        if detected.get("foot", False) or (self.config_dir / "foot").exists():
+        if should_run("foot") and (detected.get("foot", False) or (self.config_dir / "foot").exists()):
             results["Foot"] = self.apply_foot(palette)
 
-        if detected.get("wezterm", False) or (self.config_dir / "wezterm").exists():
+        if should_run("wezterm") and (detected.get("wezterm", False) or (self.config_dir / "wezterm").exists()):
             results["WezTerm"] = self.apply_wezterm(palette)
 
-        if detected.get("zellij", False) or (self.config_dir / "zellij").exists():
+        if should_run("zellij") and (detected.get("zellij", False) or (self.config_dir / "zellij").exists()):
             results["Zellij"] = self.apply_zellij(palette)
 
-        if detected.get("starship", True):
+        if should_run("starship") and detected.get("starship", True):
             results["Starship"] = self.apply_starship(palette)
 
-        if detected.get("fastfetch", True):
+        if should_run("fastfetch") and detected.get("fastfetch", True):
             results["Fastfetch"] = self.apply_fastfetch(palette)
 
         return results

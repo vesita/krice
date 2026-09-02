@@ -20,12 +20,13 @@ class ThemeController:
         self.home = home_dir or Path.home()
         self.config_dir = Path(os.environ.get("XDG_CONFIG_HOME", str(self.home / ".config")))
         self.data_dir = Path(os.environ.get("XDG_DATA_HOME", str(self.home / ".local" / "share")))
-        self.kwin = KWinController(dry_run=dry_run)
+        self.kdeglobals = self.config_dir / "kdeglobals"
+        self.kwinrc = self.config_dir / "kwinrc"
+        self.kwin = KWinController(dry_run=dry_run, home_dir=self.home)
         self.apply_colorscheme_bin = shutil.which("plasma-apply-colorscheme")
         self.apply_lookandfeel_bin = shutil.which("plasma-apply-lookandfeel")
         self.apply_cursortheme_bin = shutil.which("plasma-apply-cursortheme")
         self.apply_wallpaper_bin = shutil.which("plasma-apply-wallpaperimage")
-
     # ==================== 1. Color Schemes ====================
 
     def list_colorschemes(self) -> list[str]:

@@ -147,12 +147,11 @@ def test_terminal_cli_commands() -> None:
 
     res_apply = runner.invoke(app, ["terminal", "apply", "cachy-nord", "--dry-run"])
     assert res_apply.exit_code == 0
-    assert "Applying Terminal Palette" in res_apply.output
+    assert "正在应用终端调色板" in res_apply.output
 
     res_sync = runner.invoke(app, ["terminal", "sync", "--dry-run"])
     assert res_sync.exit_code == 0
-    assert "Dynamically Synthesizing Palette" in res_sync.output
-
+    assert "正在提取 KDE 配色方案" in res_sync.output
     res_export = runner.invoke(app, ["terminal", "export-palette", "dracula"])
     assert res_export.exit_code == 0
     assert "Dracula" in res_export.output

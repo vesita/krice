@@ -7,15 +7,17 @@ import json
 import os
 import shutil
 import socket
+import subprocess
 import tarfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, List, Optional
 
+from krice.installer import DependencyHelper
 from krice.kwin_ctl import KWinController
 
 TRACKED_TARGETS = [
-    # Core KDE configuration files
+    # 1. Core KDE Plasma & KWin Motion / Window Decorations / Look & Feel
     ("config", "kwinrc"),
     ("config", "kdeglobals"),
     ("config", "kglobalshortcutsrc"),
@@ -26,35 +28,29 @@ TRACKED_TARGETS = [
     ("config", "plasma-org.kde.plasma.desktop-appletsrc"),
     ("config", "plasmashellrc"),
     ("config", "kfontinst"),
-    ("config", "konsolerc"),
-    # Third-party theme engine & toolkit configurations
-    ("config", "klassy"),
-    ("config", "Kvantum"),
     ("config", "gtk-3.0"),
     ("config", "gtk-4.0"),
     ("config", "xsettingsd"),
-    # Terminal & Shell theme configurations
-    ("config", "alacritty"),
+    # 2. Terminal Emulator (Kitty)
     ("config", "kitty"),
-    ("config", "ghostty"),
-    ("config", "foot"),
-    ("config", "wezterm"),
-    ("config", "zellij"),
+    # 3. Shell Prompt & Fetch (Starship, Fastfetch, Fish)
     ("config", "starship.toml"),
     ("config", "fastfetch"),
     ("config", "fish/config.fish"),
-    # Input Method (Fcitx5) configurations & themes
-    ("config", "fcitx5"),
-    # Local custom themes & effects assets
-    ("data", "kwin/effects"),
-    ("data", "aurorae/themes"),
-    ("data", "kwin/scripts"),
-    ("data", "color-schemes"),
-    ("data", "konsole"),
+    ("config", "fish/conf.d"),
+    # 4. Local User Custom Theme Assets (Orchis look-and-feel, color schemes, active cursors & fonts)
     ("data", "plasma/look-and-feel"),
     ("data", "plasma/desktoptheme"),
-    ("data", "Kvantum"),
-    ("data", "fcitx5/themes"),
+    ("data", "color-schemes"),
+    ("data", "aurorae/themes"),
+    ("data", "kwin/effects"),
+    ("data", "kwin/scripts"),
+    ("data", "icons/Vimix-cursors"),
+    ("data", "icons/Vimix-white-cursors"),
+    ("data", "icons/Tela-circle"),
+    ("data", "icons/Tela-circle-nord-light"),
+    ("data", "icons/Tela-circle-light"),
+    ("data", "fonts"),
 ]
 
 
@@ -67,6 +63,7 @@ class SnapshotManager:
         self.config_dir = Path(os.environ.get("XDG_CONFIG_HOME", str(self.home / ".config")))
         self.data_dir = Path(os.environ.get("XDG_DATA_HOME", str(self.home / ".local" / "share")))
         self.backup_dir = self.home / ".cache" / "krice" / "backups"
+        self.installer = DependencyHelper(home_dir=self.home)
 
     def _resolve_source(self, category: str, rel_path: str) -> Path:
         if category == "config":
@@ -92,6 +89,7 @@ class SnapshotManager:
             "name": profile_name,
             "created_at": now.isoformat(),
             "hostname": socket.gethostname(),
+            "scope": "Orchis Theme, KWin Motion, Kitty Terminal & Starship Shell",
             "files": [],
         }
 
@@ -127,13 +125,32 @@ class SnapshotManager:
                 pass
             return {"files": tar.getnames()}
 
-    def restore_snapshot(self, snapshot_path: Path, create_backup: bool = True) -> list[str]:
+    def restore_snapshot(
+        self,
+        snapshot_path: Path,
+        create_backup: bool = True,
+        install_deps: bool = False,
+        wire_shell_hooks: bool = True,
+    ) -> list[str]:
         """Restores a snapshot archive into current user's ~/.config and ~/.local/share."""
         if not snapshot_path.exists():
             raise FileNotFoundError(f"Snapshot not found: {snapshot_path}")
 
         restored_items: list[str] = []
 
+        # Auto-install missing packages if requested
+        if install_deps and not self.dry_run:
+            missing_pkgs: List[str] = []
+            for check in self.installer.check_all():
+                if check.essential and not check.installed:
+                    if check.name == "MesloLGS Nerd Font":
+                        self.installer.install_meslo_nerd_font()
+                    else:
+                        missing_pkgs.append(check.name)
+            if missing_pkgs:
+                self.installer.install_packages(missing_pkgs)
+
+        # Create safety backup of existing configs
         if create_backup and not self.dry_run:
             now_str = datetime.now().strftime("%Y%m%d_%H%M%S")
             cur_backup_dir = self.backup_dir / f"backup_before_{now_str}"
@@ -151,6 +168,7 @@ class SnapshotManager:
                     except Exception:
                         pass
 
+        # Extract archive members
         with tarfile.open(snapshot_path, "r:gz") as tar:
             for member in tar.getmembers():
                 if member.name == "metadata.json":
@@ -191,9 +209,26 @@ class SnapshotManager:
                         if extracted:
                             dest.write_bytes(extracted.read())
 
-        # Live reload KWin
         if not self.dry_run:
+            # 1. Ensure Starship prompt hooks are present in user shells
+            if wire_shell_hooks:
+                self.installer.inject_shell_hooks(["fish", "zsh", "bash"])
+
+            # 2. Update font cache
+            if (self.data_dir / "fonts").exists() and shutil.which("fc-cache"):
+                try:
+                    subprocess.run(["fc-cache", "-f", str(self.data_dir / "fonts")], check=False, capture_output=True)
+                except Exception:
+                    pass
+
+            # 3. Live reload KWin
             kwin = KWinController()
             kwin.reconfigure_kwin()
+
+            # 4. Signal Kitty
+            try:
+                subprocess.run(["pkill", "-USR1", "kitty"], check=False, capture_output=True)
+            except Exception:
+                pass
 
         return restored_items
