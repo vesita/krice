@@ -438,6 +438,18 @@ color12 {palette.bright_blue}
 color13 {palette.bright_magenta}
 color14 {palette.bright_cyan}
 color15 {palette.bright_white}
+
+# Tab bar colors
+active_tab_background {palette.blue}
+active_tab_foreground #FFFFFF
+inactive_tab_background {palette.selection_bg}
+inactive_tab_foreground {palette.dim_foreground}
+tab_bar_background {palette.background}
+tab_bar_margin_color {palette.background}
+
+# Window borders
+active_border_color {palette.blue}
+inactive_border_color {palette.selection_bg}
 """
         try:
             theme_file.write_text(theme_content, encoding="utf-8")
@@ -446,7 +458,50 @@ color15 {palette.bright_white}
                 if "include current-theme.conf" not in main_txt:
                     main_config.write_text(main_txt + "\ninclude current-theme.conf\n", encoding="utf-8")
             else:
-                main_config.write_text("include current-theme.conf\nbackground_opacity 0.94\n", encoding="utf-8")
+                default_kitty_conf = """# Kitty Terminal Configuration - Managed by krice
+include current-theme.conf
+
+# Typography
+font_family      MesloLGS Nerd Font
+bold_font        auto
+italic_font      auto
+bold_italic_font auto
+font_size        11.5
+
+# Window & Padding
+window_padding_width 14 16
+placement_strategy center
+background_opacity 0.96
+background_blur 20
+
+# Cursor
+cursor_shape beam
+cursor_beam_thickness 1.8
+cursor_blink_interval 0.5
+
+# Tab Bar Styling (Top Powerline Slanted Tabs)
+tab_bar_edge top
+tab_bar_style powerline
+tab_powerline_style slanted
+tab_bar_min_tabs 1
+tab_bar_margin_width 4.0
+tab_bar_margin_height 4.0 0.0
+tab_title_template " 󰓩 {index}: {title} "
+active_tab_font_style bold-italic
+inactive_tab_font_style normal
+
+# Shortcuts
+map ctrl+shift+t new_tab
+map ctrl+shift+w close_tab
+map ctrl+shift+right next_tab
+map ctrl+shift+left previous_tab
+map ctrl+shift+1 goto_tab 1
+map ctrl+shift+2 goto_tab 2
+map ctrl+shift+3 goto_tab 3
+map ctrl+shift+4 goto_tab 4
+map ctrl+shift+5 goto_tab 5
+"""
+                main_config.write_text(default_kitty_conf, encoding="utf-8")
 
             # Signal Kitty if running
             try:
