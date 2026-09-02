@@ -492,9 +492,8 @@ italic_font      auto
 bold_italic_font auto
 font_size        {font_size}
 
-# Window & Padding
-window_padding_width 14 16
-placement_strategy center
+# Window & Padding (Default Natural Spacing)
+window_padding_width 0
 background_opacity 0.96
 background_blur 20
 
