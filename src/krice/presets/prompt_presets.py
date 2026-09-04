@@ -44,40 +44,31 @@ SOFTWARE_CAPSULES: list[LanguageCapsuleSpec] = [
 
 
 def generate_starship_config(palette: TerminalPalette) -> str:
-    """生成匹配调色板的一体化极简浮动单胶囊 (内嵌官方品牌色徽章色块) starship.toml 配置文件。"""
-    bg_pill = "#FFFFFF" if not palette.is_dark else palette.selection_bg
+    """生成匹配调色板的一体化极简浮动单胶囊 (Unified Floating Pill) starship.toml 配置文件。"""
+    bg_pill = palette.selection_bg if palette.is_dark else "#FFFFFF"
     fg_text = palette.foreground
     accent_blue = palette.blue
-    accent_cyan = palette.cyan
     accent_yellow = palette.yellow
     accent_red = palette.red
-    divider_fg = "#CBD5E1" if not palette.is_dark else "#4C566A"
-
-    dir_badge_bg = accent_blue if not palette.is_dark else accent_cyan
-    dir_badge_fg = "#FFFFFF" if not palette.is_dark else palette.background
-
-    git_badge_bg = accent_blue
-    git_badge_fg = "#FFFFFF"
+    accent_cyan = palette.cyan
+    divider_fg = "#4C566A" if palette.is_dark else "#CBD5E1"
 
     # 自动生成所有注册语言/软件的 format 变量流
     module_formats = "\n".join(f"${spec.module}\\" for spec in SOFTWARE_CAPSULES)
 
-    # 自动渲染各个软件专属的自适应内嵌彩色徽章胶囊模块
+    # 自动渲染各个软件专属的自适应极简胶囊内部模块
     module_sections: list[str] = []
     for spec in SOFTWARE_CAPSULES:
-        badge_bg = spec.brand_color
-        badge_fg = spec.icon_fg
-
         section = f"""[{spec.module}]
 symbol = "{spec.symbol}"
 style = "fg:{fg_text} bg:{bg_pill} bold"
-format = "[│ ](fg:{divider_fg} bg:{bg_pill})[ {spec.symbol} ](bg:{badge_bg} fg:{badge_fg})[ {spec.var_template} ]($style)"
+format = "[│ ](fg:{divider_fg} bg:{bg_pill})[{spec.symbol} ](fg:{spec.brand_color} bg:{bg_pill})[{spec.var_template} ]($style)"
 """
         module_sections.append(section)
 
     rendered_modules = "\n".join(module_sections)
 
-    return f"""# Starship 提示符 - 一体化极简浮动单胶囊 (内嵌官方品牌色徽章色块)，由 krice 自动生成: {palette.display_name}
+    return f"""# Starship 提示符 - 一体化极简浮动单胶囊，由 krice 自动生成: {palette.display_name}
 
 format = \"\"\"
 $directory\\
@@ -92,14 +83,14 @@ command_timeout = 800
 
 [directory]
 style = "fg:{fg_text} bg:{bg_pill} bold"
-format = "[]({bg_pill})[  ](bg:{dir_badge_bg} fg:{dir_badge_fg})[ $path ]($style)"
+format = "[]({bg_pill})[  ](fg:{accent_cyan if palette.is_dark else accent_blue} bg:{bg_pill})[$path ]($style)"
 truncation_length = 3
 truncation_symbol = "…/"
 
 [git_branch]
 symbol = ""
 style = "fg:{fg_text} bg:{bg_pill} bold"
-format = "[│ ](fg:{divider_fg} bg:{bg_pill})[ $symbol ](bg:{git_badge_bg} fg:{git_badge_fg})[ $branch ]($style)"
+format = "[│ ](fg:{divider_fg} bg:{bg_pill})[$symbol ](fg:{accent_blue} bg:{bg_pill})[$branch ]($style)"
 
 [git_status]
 style = "fg:{accent_yellow} bg:{bg_pill}"
@@ -109,7 +100,7 @@ format = "([$all_status$ahead_behind ]($style))"
 [cmd_duration]
 min_time = 500
 style = "fg:#64748B bg:{bg_pill} bold"
-format = "[│ ](fg:{divider_fg} bg:{bg_pill})[ ⏱ ](bg:#64748B fg:#FFFFFF)[ $duration ]($style)"
+format = "[│ ](fg:{divider_fg} bg:{bg_pill})[⏱ ](fg:{accent_yellow} bg:{bg_pill})[$duration ]($style)"
 
 [character]
 success_symbol = "[ ](fg:{bg_pill})[❯](bold {accent_blue})"
