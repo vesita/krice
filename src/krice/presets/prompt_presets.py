@@ -44,35 +44,40 @@ SOFTWARE_CAPSULES: list[LanguageCapsuleSpec] = [
 
 
 def generate_starship_config(palette: TerminalPalette) -> str:
-    """生成匹配调色板的模块化对称独立胶囊 (Modular Floating Pills) starship.toml 配置文件。"""
-    bg_dir = "#FFFFFF" if not palette.is_dark else palette.selection_bg
-    fg_dir = palette.foreground
+    """生成匹配调色板的一体化极简浮动单胶囊 (内嵌官方品牌色徽章色块) starship.toml 配置文件。"""
+    bg_pill = "#FFFFFF" if not palette.is_dark else palette.selection_bg
+    fg_text = palette.foreground
     accent_blue = palette.blue
     accent_cyan = palette.cyan
     accent_yellow = palette.yellow
     accent_red = palette.red
-    bg_git = palette.selection_bg
+    divider_fg = "#CBD5E1" if not palette.is_dark else "#4C566A"
+
+    dir_badge_bg = accent_blue if not palette.is_dark else accent_cyan
+    dir_badge_fg = "#FFFFFF" if not palette.is_dark else palette.background
+
+    git_badge_bg = accent_blue
+    git_badge_fg = "#FFFFFF"
 
     # 自动生成所有注册语言/软件的 format 变量流
     module_formats = "\n".join(f"${spec.module}\\" for spec in SOFTWARE_CAPSULES)
 
-    # 自动渲染各个软件专属的自适应独立胶囊模块
+    # 自动渲染各个软件专属的自适应内嵌彩色徽章胶囊模块
     module_sections: list[str] = []
     for spec in SOFTWARE_CAPSULES:
-        ver_bg = palette.selection_bg if palette.is_dark else (spec.light_bg or "#F1F5F9")
-        ver_fg = (spec.icon_fg if spec.icon_fg != "#FFFFFF" else spec.brand_color) if palette.is_dark else (spec.light_fg or spec.brand_color)
-        icon_fg = spec.brand_color
+        badge_bg = spec.brand_color
+        badge_fg = spec.icon_fg
 
         section = f"""[{spec.module}]
 symbol = "{spec.symbol}"
-style = "fg:{ver_fg} bg:{ver_bg} bold"
-format = "[]({ver_bg})[ {spec.symbol} ](fg:{icon_fg} bg:{ver_bg})[{spec.var_template} ]($style)[ ](fg:{ver_bg})"
+style = "fg:{fg_text} bg:{bg_pill} bold"
+format = "[│ ](fg:{divider_fg} bg:{bg_pill})[ {spec.symbol} ](bg:{badge_bg} fg:{badge_fg})[ {spec.var_template} ]($style)"
 """
         module_sections.append(section)
 
     rendered_modules = "\n".join(module_sections)
 
-    return f"""# Starship 提示符 - 模块化对称独立胶囊群，由 krice 自动生成: {palette.display_name}
+    return f"""# Starship 提示符 - 一体化极简浮动单胶囊 (内嵌官方品牌色徽章色块)，由 krice 自动生成: {palette.display_name}
 
 format = \"\"\"
 $directory\\
@@ -86,29 +91,29 @@ $character
 command_timeout = 800
 
 [directory]
-style = "fg:{fg_dir} bg:{bg_dir} bold"
-format = "[]({bg_dir})[  ](fg:{accent_cyan if palette.is_dark else accent_blue} bg:{bg_dir})[$path ]($style)[ ](fg:{bg_dir})"
+style = "fg:{fg_text} bg:{bg_pill} bold"
+format = "[]({bg_pill})[  ](bg:{dir_badge_bg} fg:{dir_badge_fg})[ $path ]($style)"
 truncation_length = 3
 truncation_symbol = "…/"
 
 [git_branch]
 symbol = ""
-style = "fg:{accent_blue} bg:{bg_git} bold"
-format = "[]({bg_git})[ $symbol ](fg:{accent_blue} bg:{bg_git})[$branch]($style)"
+style = "fg:{fg_text} bg:{bg_pill} bold"
+format = "[│ ](fg:{divider_fg} bg:{bg_pill})[ $symbol ](bg:{git_badge_bg} fg:{git_badge_fg})[ $branch ]($style)"
 
 [git_status]
-style = "fg:{accent_yellow} bg:{bg_git}"
-format = "[ $all_status$ahead_behind ]($style)[ ](fg:{bg_git})"
+style = "fg:{accent_yellow} bg:{bg_pill}"
+format = "([$all_status$ahead_behind ]($style))"
 
 {rendered_modules}
 [cmd_duration]
 min_time = 500
-style = "fg:#334155 bg:#E2E8F0 bold"
-format = "[](#E2E8F0)[ ⏱ ](fg:#64748B bg:#E2E8F0)[$duration ]($style)[ ](fg:#E2E8F0)"
+style = "fg:#64748B bg:{bg_pill} bold"
+format = "[│ ](fg:{divider_fg} bg:{bg_pill})[ ⏱ ](bg:#64748B fg:#FFFFFF)[ $duration ]($style)"
 
 [character]
-success_symbol = "[❯](bold {accent_blue})"
-error_symbol = "[❯](bold {accent_red})"
+success_symbol = "[ ](fg:{bg_pill})[❯](bold {accent_blue})"
+error_symbol = "[ ](fg:{bg_pill})[❯](bold {accent_red})"
 """
 
 def generate_fastfetch_config(palette: TerminalPalette) -> str:
