@@ -67,7 +67,7 @@ def generate_starship_config(palette: TerminalPalette) -> str:
         section = f"""[{spec.module}]
 symbol = "{spec.symbol}"
 style = "fg:{ver_fg} bg:{ver_bg} bold"
-format = "[]({icon_bg})[ $symbol ](bg:{icon_bg} fg:{icon_fg})[](bg:{ver_bg} fg:{icon_bg})[ {spec.var_template} ]($style)[ ](fg:{ver_bg})"
+format = "[]({icon_bg})[ {spec.symbol}](bg:{icon_bg} fg:{icon_fg})[](bg:{ver_bg} fg:{icon_bg})[ {spec.var_template}]($style)[ ](fg:{ver_bg})"
 """
         module_sections.append(section)
 
@@ -88,25 +88,24 @@ command_timeout = 800
 
 [directory]
 style = "fg:{fg_pill_2} bg:{bg_pill_2} bold"
-format = "[]({bg_pill_1})[  ](bg:{bg_pill_1} fg:{fg_pill_1})[](bg:{bg_pill_2} fg:{bg_pill_1})[ $path ]($style)[ ](fg:{bg_pill_2})"
+format = "[]({bg_pill_1})[ ](bg:{bg_pill_1} fg:{fg_pill_1})[](bg:{bg_pill_2} fg:{bg_pill_1})[ $path]($style)[ ](fg:{bg_pill_2})"
 truncation_length = 3
 truncation_symbol = "…/"
 
 [git_branch]
 symbol = ""
 style = "fg:{accent_blue} bg:{palette.selection_bg} bold"
-format = "[]({accent_blue})[ $symbol ](bg:{accent_blue} fg:{fg_pill_1})[](bg:{palette.selection_bg} fg:{accent_blue})[ $branch ]($style)"
+format = "[]({accent_blue})[ $symbol](bg:{accent_blue} fg:{fg_pill_1})[](bg:{palette.selection_bg} fg:{accent_blue})[ $branch]($style)"
 
 [git_status]
 style = "fg:{accent_yellow} bg:{palette.selection_bg}"
-format = "[$all_status$ahead_behind ]($style)[ ](fg:{palette.selection_bg})"
+format = "[ $all_status$ahead_behind]($style)[ ](fg:{palette.selection_bg})"
 
 {rendered_modules}
 [cmd_duration]
 min_time = 500
 style = "fg:#334155 bg:#E2E8F0 bold"
-format = "[](#64748B)[ ⏱ ](bg:#64748B fg:{fg_pill_1})[](bg:#E2E8F0 fg:#64748B)[ $duration ]($style)[ ](fg:#E2E8F0)"
-
+format = "[](#64748B)[ ⏱](bg:#64748B fg:{fg_pill_1})[](bg:#E2E8F0 fg:#64748B)[ $duration]($style)[ ](fg:#E2E8F0)"
 [character]
 success_symbol = "[❯](bold {accent_blue})"
 error_symbol = "[❯](bold {accent_red})"
