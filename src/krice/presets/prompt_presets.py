@@ -44,31 +44,35 @@ SOFTWARE_CAPSULES: list[LanguageCapsuleSpec] = [
 
 
 def generate_starship_config(palette: TerminalPalette) -> str:
-    """生成匹配调色板的一体化极简浮动单胶囊 (Unified Floating Pill) starship.toml 配置文件。"""
-    bg_pill = palette.selection_bg if palette.is_dark else "#FFFFFF"
-    fg_text = palette.foreground
+    """生成匹配调色板的模块化对称独立胶囊 (Modular Floating Pills) starship.toml 配置文件。"""
+    bg_dir = "#FFFFFF" if not palette.is_dark else palette.selection_bg
+    fg_dir = palette.foreground
     accent_blue = palette.blue
+    accent_cyan = palette.cyan
     accent_yellow = palette.yellow
     accent_red = palette.red
-    accent_cyan = palette.cyan
-    divider_fg = "#4C566A" if palette.is_dark else "#CBD5E1"
+    bg_git = palette.selection_bg
 
     # 自动生成所有注册语言/软件的 format 变量流
     module_formats = "\n".join(f"${spec.module}\\" for spec in SOFTWARE_CAPSULES)
 
-    # 自动渲染各个软件专属的自适应极简胶囊内部模块
+    # 自动渲染各个软件专属的自适应独立胶囊模块
     module_sections: list[str] = []
     for spec in SOFTWARE_CAPSULES:
+        ver_bg = palette.selection_bg if palette.is_dark else (spec.light_bg or "#F1F5F9")
+        ver_fg = (spec.icon_fg if spec.icon_fg != "#FFFFFF" else spec.brand_color) if palette.is_dark else (spec.light_fg or spec.brand_color)
+        icon_fg = spec.brand_color
+
         section = f"""[{spec.module}]
 symbol = "{spec.symbol}"
-style = "fg:{fg_text} bg:{bg_pill} bold"
-format = "[│ ](fg:{divider_fg} bg:{bg_pill})[{spec.symbol} ](fg:{spec.brand_color} bg:{bg_pill})[{spec.var_template} ]($style)"
+style = "fg:{ver_fg} bg:{ver_bg} bold"
+format = "[]({ver_bg})[ {spec.symbol} ](fg:{icon_fg} bg:{ver_bg})[{spec.var_template} ]($style)[ ](fg:{ver_bg})"
 """
         module_sections.append(section)
 
     rendered_modules = "\n".join(module_sections)
 
-    return f"""# Starship 提示符 - 一体化极简浮动单胶囊，由 krice 自动生成: {palette.display_name}
+    return f"""# Starship 提示符 - 模块化对称独立胶囊群，由 krice 自动生成: {palette.display_name}
 
 format = \"\"\"
 $directory\\
@@ -82,29 +86,29 @@ $character
 command_timeout = 800
 
 [directory]
-style = "fg:{fg_text} bg:{bg_pill} bold"
-format = "[]({bg_pill})[  ](fg:{accent_cyan if palette.is_dark else accent_blue} bg:{bg_pill})[$path ]($style)"
+style = "fg:{fg_dir} bg:{bg_dir} bold"
+format = "[]({bg_dir})[  ](fg:{accent_cyan if palette.is_dark else accent_blue} bg:{bg_dir})[$path ]($style)[ ](fg:{bg_dir})"
 truncation_length = 3
 truncation_symbol = "…/"
 
 [git_branch]
 symbol = ""
-style = "fg:{fg_text} bg:{bg_pill} bold"
-format = "[│ ](fg:{divider_fg} bg:{bg_pill})[$symbol ](fg:{accent_blue} bg:{bg_pill})[$branch]($style)"
+style = "fg:{accent_blue} bg:{bg_git} bold"
+format = "[]({bg_git})[ $symbol ](fg:{accent_blue} bg:{bg_git})[$branch]($style)"
 
 [git_status]
-style = "fg:{accent_yellow} bg:{bg_pill}"
-format = "[ $all_status$ahead_behind ]($style)"
+style = "fg:{accent_yellow} bg:{bg_git}"
+format = "[ $all_status$ahead_behind ]($style)[ ](fg:{bg_git})"
 
 {rendered_modules}
 [cmd_duration]
 min_time = 500
-style = "fg:#64748B bg:{bg_pill} bold"
-format = "[│ ](fg:{divider_fg} bg:{bg_pill})[⏱ ](fg:{accent_yellow} bg:{bg_pill})[$duration ]($style)"
+style = "fg:#334155 bg:#E2E8F0 bold"
+format = "[](#E2E8F0)[ ⏱ ](fg:#64748B bg:#E2E8F0)[$duration ]($style)[ ](fg:#E2E8F0)"
 
 [character]
-success_symbol = "[ ](fg:{bg_pill})[❯](bold {accent_blue})"
-error_symbol = "[ ](fg:{bg_pill})[❯](bold {accent_red})"
+success_symbol = "[❯](bold {accent_blue})"
+error_symbol = "[❯](bold {accent_red})"
 """
 
 def generate_fastfetch_config(palette: TerminalPalette) -> str:
