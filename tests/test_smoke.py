@@ -88,3 +88,27 @@ def test_snapshot_roundtrip(tmp_path: Path) -> None:
     assert "files" in info
     assert any("kwinrc" in f for f in info["files"])
     assert any("kitty" in f for f in info["files"])
+
+
+def test_snapshot_niri_support(tmp_path: Path) -> None:
+    home_dir = tmp_path / "user"
+    home_dir.mkdir()
+    config_dir = home_dir / ".config"
+    config_dir.mkdir()
+    (config_dir / "niri").mkdir()
+    (config_dir / "niri" / "config.kdl").write_text("// niri config\n")
+    (config_dir / "waybar").mkdir()
+    (config_dir / "waybar" / "config.jsonc").write_text("{}\n")
+    (home_dir / ".vscode").mkdir()
+    (home_dir / ".vscode" / "argv.json").write_text('{"password-store": "basic"}\n')
+
+    manager = SnapshotManager(dry_run=False, home_dir=home_dir)
+    out_file = tmp_path / "niri_test.pmz"
+    created = manager.create_snapshot(output_path=out_file, name="niri-test")
+    assert created.exists()
+
+    info = manager.inspect_snapshot(created)
+    assert info["name"] == "niri-test"
+    assert any("niri" in f for f in info["files"])
+    assert any("waybar" in f for f in info["files"])
+    assert any("argv.json" in f for f in info["files"])

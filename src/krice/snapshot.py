@@ -38,7 +38,15 @@ TRACKED_TARGETS = [
     ("config", "fastfetch"),
     ("config", "fish/config.fish"),
     ("config", "fish/conf.d"),
-    # 4. Local User Custom Theme Assets (Orchis look-and-feel, color schemes, active cursors & fonts)
+    # 4. Niri Wayland Scrollable Tiling Compositor & Ecosystem
+    ("config", "niri"),
+    ("config", "waybar"),
+    ("config", "fuzzel"),
+    ("config", "swaync"),
+    ("config", "environment.d"),
+    ("config", "xdg-desktop-portal"),
+    ("home", ".vscode/argv.json"),
+    # 5. Local User Custom Theme Assets (Orchis look-and-feel, color schemes, active cursors & fonts)
     ("data", "plasma/look-and-feel"),
     ("data", "plasma/desktoptheme"),
     ("data", "color-schemes"),
@@ -88,7 +96,7 @@ class SnapshotManager:
             "name": profile_name,
             "created_at": now.isoformat(),
             "hostname": socket.gethostname(),
-            "scope": "Orchis Theme, KWin Motion, Kitty Terminal & Starship Shell",
+            "scope": "KDE Plasma 6 & Niri Scrollable Tiling Rice (Orchis Theme, Waybar, KWin, Kitty & Starship)",
             "files": [],
         }
 
@@ -179,6 +187,8 @@ class SnapshotManager:
                     target_base = self.config_dir
                 elif category == "data":
                     target_base = self.data_dir
+                elif category == "home":
+                    target_base = self.home
                 else:
                     continue
 
@@ -209,10 +219,19 @@ class SnapshotManager:
             if wire_shell_hooks:
                 self.installer.inject_shell_hooks(["fish", "zsh", "bash"])
 
-            # 3. Live reload KWin
-            kwin = KWinController()
-            kwin.reconfigure_kwin()
+            # 3. Live reload KWin if available
+            try:
+                kwin = KWinController()
+                kwin.reconfigure_kwin()
+            except Exception:
+                pass
 
+            # 4. Live reload Niri and Waybar if available
+            try:
+                subprocess.run(["niri", "msg", "action", "load-config-file"], check=False, capture_output=True)
+                subprocess.run(["pkill", "-USR2", "waybar"], check=False, capture_output=True)
+            except Exception:
+                pass
             # 4. Signal Kitty
             try:
                 subprocess.run(["pkill", "-USR1", "kitty"], check=False, capture_output=True)

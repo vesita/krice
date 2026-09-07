@@ -268,6 +268,39 @@ class DependencyHelper:
                 install_command=f"{aur_helper} -S vimix-cursors" if has_aur else "krice install --cursors",
                 essential=False,
             ),
+            # 4. Niri 平铺合成器与 Wayland 现代化生态
+            PackageStatus(
+                name="niri",
+                category="平铺合成器",
+                description="现代无限水平滚动平铺 Wayland 合成器",
+                installed=shutil.which("niri") is not None,
+                install_command=f"{active_installer} niri",
+                essential=False,
+            ),
+            PackageStatus(
+                name="waybar",
+                category="Wayland 状态栏",
+                description="高度可定制的现代化 Wayland 状态栏与侧边坞",
+                installed=shutil.which("waybar") is not None,
+                install_command=f"{active_installer} waybar",
+                essential=False,
+            ),
+            PackageStatus(
+                name="fuzzel",
+                category="应用启动器",
+                description="极速轻量级 Wayland 应用启动菜单与模糊搜索选择器",
+                installed=shutil.which("fuzzel") is not None,
+                install_command=f"{active_installer} fuzzel",
+                essential=False,
+            ),
+            PackageStatus(
+                name="swaybg",
+                category="壁纸守护",
+                description="极简高效的 Wayland 壁纸渲染服务",
+                installed=shutil.which("swaybg") is not None,
+                install_command=f"{active_installer} swaybg",
+                essential=False,
+            ),
         ]
         return checks
 

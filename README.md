@@ -1,7 +1,6 @@
-# krice (KDE Plasma 6 & Terminal Rice Toolkit)
+# krice (KDE Plasma 6 & Niri Wayland Rice Toolkit)
 
-**krice** 是专为 **CachyOS / Arch Linux + KDE Plasma 6 (Wayland)** 量身定制的全维度桌面美化（Rice）、终端全生态调色联动、物理流体动效调优与跨设备配置无损迁移工具箱。
-
+**krice** 是专为 **CachyOS / Arch Linux + KDE Plasma 6 & Niri (Wayland)** 量身定制的全维度桌面美化（Rice）、终端全生态调色联动、物理流体动效调优、双桌面工作流与跨设备配置无损迁移工具箱。
 ---
 
 ## 🌟 核心能力
@@ -21,9 +20,9 @@
    - **缩略图网格切换器（Thumbnail Grid）**：开启现代缩略图网格任务切换器，替代传统卡片。
    - **硬件级背景毛玻璃**：KWin 合成器模糊强度（BlurStrength）调优至 `12`，亚克力质感深邃通透。
 
-4. **📦 跨机器配置打包、无损还原与依赖自愈 (`krice snapshot` / `krice install`)**：
-   - **精准打包范围**：聚焦于 **Orchis 主题套件、KWin 动效与毛玻璃、Kitty 终端、Starship 提示符与 Fish/Zsh/Bash Shell 配置、本地字体与指针图标**，生成单一便携快照（`.pmz`）。
-   - **内嵌智能安装器与依赖自愈**：目标机器若缺少 Kitty、Starship、MesloLGS Nerd Font 或 Shell Hook，运行 `krice install --all` 或 `krice snapshot load --install-deps` 即可全自动一键补齐所有软件包、字体并自动注入 Shell 工作目录提示符！
+4. **📦 跨机器配置打包、无损还原与双桌面迁移 (`krice snapshot` / `krice install`)**：
+   - **精准打包范围**：全面覆盖 **KDE Plasma 6 全要素、Niri 滚动平铺合成器、Waybar 侧边坞、Fuzzel 启动器、Orchis 主题套件、Kitty 终端、Starship 提示符与 Fish/Zsh/Bash Shell 配置、本地字体与指针图标**，生成单一便携快照（`.pmz`）。
+   - **内嵌智能安装器与依赖自愈**：目标机器若缺少 Kitty、Starship、Niri、Waybar、MesloLGS Nerd Font 或 Shell Hook，运行 `krice install --all` 或 `krice snapshot load --install-deps` 即可全自动一键补齐所有软件包、字体并无损还原桌面资产！
 
 5. **🏥 系统健康诊断与工具链审计 (`krice doctor` / `krice status`)**：
    - 实时诊断 Wayland 会话、KWin 动效参数、已安装终端、字体有效性与三大 Shell（Fish / Zsh / Bash）的前缀提示符挂钩状态。
